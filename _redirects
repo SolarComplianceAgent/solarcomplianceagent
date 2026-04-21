@@ -1,0 +1,6 @@
+/              /index.html     200
+/auth          /auth.html      200
+/dashboard     dshboard.html 200
+/intake        /intake.html    200
+/checklist     /checklist.html 200
+/*             /index.html     200

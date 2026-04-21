@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar Compliance Agent — Compliance Checklist</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #ffffff;
+      color: #0f172a;
+    }
+
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .logo {
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      color: #1a6b3c;
+      font-size: 20px;
+      text-decoration: none;
+    }
+
+    .nav-center {
+      flex: 1;
+      text-align: center;
+      font-weight: 600;
+      color: #475569;
+      font-size: 16px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-email {
+      color: #475569;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+
+    .btn {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 120ms ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #1a6b3c;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(26, 107, 60, 0.18);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 16px rgba(26, 107, 60, 0.22);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #f8fafc;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #1a6b3c;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .back-link:hover {
+      color: #166534;
+    }
+
+    .job-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+      border: 1px solid #e2e8f0;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .job-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .job-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .job-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .info-item {
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .progress-bar {
+      position: sticky;
+      top: 0;
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+      margin-bottom: 20px;
+      z-index: 5;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .progress-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .progress-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .progress-bar-fill {
+      height: 8px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #1a6b3c;
+      transition: width 300ms ease;
+      border-radius: 4px;
+    }
+
+    .checklist-container {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+
+    .section {
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+    }
+
+    .section-header {
+      background: #f8fafc;
+      padding: 16px 24px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a6b3c;
+    }
+
+    .section-items {
+      padding: 0;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 24px;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background-color 120ms ease;
+    }
+
+    .checklist-item:last-child {
+      border-bottom: none;
+    }
+
+    .checklist-item:hover {
+      background: #f8fafc;
+    }
+
+    .checklist-item.checked {
+      background: #f0fdf4;
+    }
+
+    .checklist-checkbox {
+      width: 20px;
+      height: 20px;
+      accent-color: #1a6b3c;
+      margin-top: 2px;
+      cursor: pointer;
+    }
+
+    .checklist-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .checklist-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+
+    .checklist-item.checked .checklist-text {
+      color: #1a6b3c;
+      text-decoration: line-through;
+    }
+
+    .checklist-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nec-badge {
+      background: #f1f5f9;
+      color: #64748b;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid #e2e8f0;
+    }
+
+    .tooltip-btn {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: help;
+      position: relative;
+    }
+
+    .tooltip-btn:hover {
+      background: #cbd5e1;
+    }
+
+    .tooltip {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      width: 200px;
+      z-index: 10;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 120ms ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .tooltip-btn:hover .tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .warn-box {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      color: #92400e;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .completion-banner {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      padding: 20px 24px;
+      border-radius: 12px;
+      margin: 20px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+    }
+
+    .completion-content h3 {
+      margin: 0 0 4px 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .completion-content p {
+      margin: 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .notes-section {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+      border: 1px solid #e2e8f0;
+      padding: 24px;
+      margin-top: 20px;
+    }
+
+    .notes-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    .notes-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    .notes-textarea:focus {
+      border-color: rgba(26, 107, 60, 0.6);
+      box-shadow: 0 0 0 4px rgba(26, 107, 60, 0.12);
+    }
+
+    .save-feedback {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: #22c55e;
+      color: white;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-left: 8px;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+    }
+
+    .save-feedback.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 150px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .field select {
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: white;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    .field select:focus {
+      border-color: rgba(26, 107, 60, 0.6);
+      box-shadow: 0 0 0 4px rgba(26, 107, 60, 0.12);
+    }
+
+    @media (max-width: 768px) {
+      .nav-inner {
+        padding: 12px 16px;
+      }
+
+      .container {
+        padding: 16px;
+      }
+
+      .job-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .job-controls {
+        justify-content: flex-end;
+      }
+
+      .job-info {
+        grid-template-columns: 1fr;
+      }
+
+      .progress-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .progress-actions {
+        justify-content: center;
+      }
+
+      .checklist-item {
+        padding: 12px 16px;
+      }
+
+      .section-header {
+        padding: 12px 16px;
+        font-size: 16px;
+      }
+
+      .completion-banner {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+      }
+
+      .completion-banner button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="dashboard.html" class="logo">⚡ Solar Compliance Agent</a>
+      <div class="nav-center" id="jobCustomerName"></div>
+      <div class="nav-actions">
+        <span id="userEmail" class="user-email"></span>
+        <button id="signOutBtn" class="btn btn-secondary">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <a href="dashboard.html" class="back-link">← Dashboard</a>
+
+    <div class="job-card">
+      <div class="job-header">
+        <h1 class="job-title">Compliance Checklist</h1>
+        <div class="job-controls">
+          <div class="field">
+            <label for="statusSelect">Status</label>
+            <select id="statusSelect">
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="job-info">
+        <div class="info-item">
+          <div class="info-label">Customer</div>
+          <div class="info-value" id="customerName">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Address</div>
+          <div class="info-value" id="jobAddress">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">System Size</div>
+          <div class="info-value" id="systemSize">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Utility</div>
+          <div class="info-value" id="utilityProvider">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">NEC Edition</div>
+          <div class="info-value" id="necEdition">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Status</div>
+          <div class="info-value" id="currentStatus">—</div>
+        </div>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-header">
+          <div class="progress-text" id="progressText">Compliance Progress — 0 of 19 steps completed</div>
+          <div class="progress-actions">
+            <button id="pdf-btn" onclick="generatePDF()"
+  style="background:#1a6b3c;color:white;border:none;
+  padding:10px 20px;border-radius:8px;font-size:14px;
+  cursor:pointer;margin:10px 0">
+  ⬇ Download PDF Report
+</button>
+          </div>
+        </div>
+        <div class="progress-bar-fill">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="completion-banner" id="completionBanner" style="display: none;">
+      <div class="completion-content">
+        <h3>🎉 All compliance steps complete! Ready for submission.</h3>
+        <p>Your checklist is complete and ready for permit submission.</p>
+      </div>
+      <button id="pdf-btn" onclick="generatePDF()"
+  style="background:#1a6b3c;color:white;border:none;
+  padding:10px 20px;border-radius:8px;font-size:14px;
+  cursor:pointer;margin:10px 0">
+  ⬇ Download PDF Report
+</button>
+    </div>
+
+    <div class="checklist-container" id="checklistContainer">
+      <!-- Checklist items will be rendered here -->
+    </div>
+
+    <div class="notes-section">
+      <label class="notes-label" for="notesField">Job Notes</label>
+      <textarea 
+        id="notesField" 
+        class="notes-textarea" 
+        placeholder="Add any additional notes about this job..."
+      ></textarea>
+    </div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://javojiuejzkockcjivae.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_1GDGd_58rM8sXTNFt93Mbw_yItm-LGv';
+    const { createClient } = supabase;
+
+    // CRITICAL AUTH FIX — first thing in script
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentUser = null;
+    const jobId = new URLSearchParams(window.location.search).get('id');
+    if (!jobId) window.location.replace('dashboard.html');
+
+    sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') {
+        if (!session) {
+          window.location.replace('auth.html');
+        } else {
+          currentUser = session.user;
+          loadPage();
+        }
+      }
+    });
+
+    // DOM elements
+    const userEmailEl = document.getElementById('userEmail');
+    const signOutBtn = document.getElementById('signOutBtn');
+    const jobCustomerNameEl = document.getElementById('jobCustomerName');
+    const statusSelectEl = document.getElementById('statusSelect');
+    const progressTextEl = document.getElementById('progressText');
+    const progressFillEl = document.getElementById('progressFill');
+    const completionBannerEl = document.getElementById('completionBanner');
+    const checklistContainerEl = document.getElementById('checklistContainer');
+    const notesFieldEl = document.getElementById('notesField');
+
+    // Job info elements
+    const customerNameEl = document.getElementById('customerName');
+    const jobAddressEl = document.getElementById('jobAddress');
+    const systemSizeEl = document.getElementById('systemSize');
+    const utilityProviderEl = document.getElementById('utilityProvider');
+    const necEditionEl = document.getElementById('necEdition');
+    const currentStatusEl = document.getElementById('currentStatus');
+
+    let jobData = null;
+    let checkedItems = new Set();
+
+    // Update navbar with user info
+    function updateNavbar() {
+      if (currentUser && userEmailEl) {
+        userEmailEl.textContent = currentUser.email;
+      }
+    }
+
+    // Sign out function
+    async function signOut() {
+      try {
+        await sb.auth.signOut();
+        window.location.replace('auth.html');
+      } catch (error) {
+        console.error('Sign out error:', error);
+      }
+    }
+
+    // Load page data
+    async function loadPage() {
+      updateNavbar();
+
+      try {
+        // Load job data
+        const { data: job, error: jobError } = await sb
+          .from('jobs')
+          .select('*')
+          .eq('id', jobId)
+          .single();
+
+        if (jobError) {
+          console.error('Error loading job:', jobError);
+          return;
+        }
+
+        jobData = job;
+        updateJobInfo();
+
+        // Load checklist items
+        const { data: saved, error: checklistError } = await sb
+          .from('checklist_items')
+          .select('question_id, is_checked')
+          .eq('job_id', jobId);
+
+        if (checklistError) {
+          console.error('Error loading checklist:', checklistError);
+        } else {
+          // Then apply saved state:
+          saved?.forEach(row => {
+            const cb = document.querySelector(
+              `input[data-question-id="${row.question_id}"]` 
+            );
+            if (cb && row.is_checked) {
+              cb.checked = true;
+              // apply green styling to parent
+            }
+          });
+        }
+
+        renderChecklist();
+        updateProgress();
+      } catch (error) {
+        console.error('Error loading page:', error);
+      }
+    }
+
+    // Update job info display
+    function updateJobInfo() {
+      if (!jobData) return;
+
+      jobCustomerNameEl.textContent = jobData.customer_name || '—';
+      customerNameEl.textContent = jobData.customer_name || '—';
+      jobAddressEl.textContent = `${jobData.job_address || '—'}, ${jobData.city || '—'}, ${jobData.state || '—'}`;
+      systemSizeEl.textContent = jobData.system_size_kw ? `${jobData.system_size_kw} kW` : '—';
+      utilityProviderEl.textContent = jobData.utility_provider || '—';
+      necEditionEl.textContent = jobData.nec_edition || '—';
+      currentStatusEl.textContent = jobData.status || '—';
+      
+      statusSelectEl.value = jobData.status || 'pending';
+    }
+
+    // Questions array
+    const questions = [
+      {id:1,section:"Setbacks & Access",nec:"IFC 605.11.1",text:"Does installation provide at least two minimum 36-inch-wide pathways on separate roof planes from lowest roof edge to ridge?",tip:"Two clear 3-foot-wide paths must run from roof edge to ridge for firefighter access."},
+      {id:2,section:"Setbacks & Access",nec:"IFC 605.11.1",text:"Is at least one 36-inch access pathway located on street or driveway side of roof?",tip:"One pathway must face street so firefighters can reach roof from their truck."},
+      {id:3,section:"Setbacks & Access",nec:"IFC 605.11.3",text:"For arrays covering 33% or less of roof area — is there an 18-inch clear setback on both sides of any horizontal ridge? (Verify with AHJ)",tip:"If panels cover less than one third of roof, leave an 18-inch gap along roof peak on both sides."},
+      {id:4,section:"Setbacks & Access",nec:"IFC 605.11.3",text:"For arrays covering more than 33% of roof area — is there a 36-inch clear setback on both sides of any horizontal ridge? (Verify AHJ local amendments)",tip:"If panels cover more than one third of roof, leave a 3-foot gap along roof peak on both sides."},
+      {id:5,section:"Setbacks & Access",nec:"IFC 605.11.2",text:"Are modules kept clear of roof area directly below emergency escape and rescue openings with a 36-inch pathway to opening?",tip:"No panels can block bedroom escape windows. A 3-foot clear path must lead to every escape window."},
+      {id:6,section:"Rapid Shutdown",nec:"NEC 690.12(B)(1)",text:"Is rapid shutdown initiation device installed in a readily accessible location?",tip:"The emergency shutoff switch must be easy for a firefighter to reach — not hidden or locked away."},
+      {id:7,section:"Rapid Shutdown",nec:"NEC 690.12",dynamic:true,text_2017:"Does rapid shutdown system reduce conductor voltage to 30V or less outside array boundary and 80V or less inside within 30 seconds? (2017 NEC)",text_2020:"Is module-level power electronics (MLPE) such as microinverters or DC optimizers installed on all roof-mounted array conductors? (2020/2023 NEC)",text_unsure:"⚠ Verify rapid shutdown requirements with your AHJ — 2017 NEC requires 30V/80V in 30 seconds, 2020/2023 NEC requires MLPE on all roof arrays.",tip:"The rapid shutdown rule changed completely between 2017 and 2020 NEC. Check which edition your AHJ adopted."},
+      {id:8,section:"Rapid Shutdown",nec:"NEC 690.56(C)",text:"Is initiation device labeled PHOTOVOLTAIC SYSTEM EQUIPPED WITH RAPID SHUTDOWN in 3/8-inch minimum white letters on a red background?",tip:"A specific red label with white text must be on shutoff switch so firefighters can identify it immediately."},
+      {id:9,section:"Required Labeling",nec:"NEC 690.31(G)(3)",text:"Are all DC conduits, enclosures, and raceways marked WARNING: PHOTOVOLTAIC POWER SOURCE at least every 10 feet?",tip:"Every 10 feet along wiring pipes, a label must warn of dangerous solar DC power inside."},
+      {id:10,section:"Required Labeling",nec:"NEC 690.31(G)(3)",text:"Are markings placed within one foot of all turns, bends, and penetrations through roof, ceiling, walls, or barriers?",tip:"Warning labels must appear right next to every corner, bend, or wall hole in wiring path."},
+      {id:11,section:"Required Labeling",nec:"NEC 690.53",text:"Does DC disconnect have a permanent sign showing: rated operating current, operating voltage, maximum rated system voltage, and short-circuit current?",tip:"The main solar shutoff needs a label with four specific electrical numbers for safety."},
+      {id:12,section:"Required Labeling",nec:"NEC 690.54",text:"Is a permanent plaque or directory at electrical service and inverter location listing all electric power sources on premises?",tip:"A sign at main panel must list every power source — solar, battery, grid, generator."},
+      {id:13,section:"Required Labeling",nec:"NEC 690.35(F)",text:"If system is ungrounded — are all junction boxes, combiner boxes, and disconnects labeled warning that DC conductors are ungrounded and may be energized?",tip:"Most modern solar systems are ungrounded. Every box must warn wires may be live even when switched off."},
+      {id:14,section:"Required Labeling",nec:"NEC 690.17(E)",text:"Is a shock hazard warning label installed on any disconnect where both line and load sides remain energized when opened — such as back-fed breakers or inverter disconnects?",tip:"Some switches stay live on both sides when turned off. These need a special shock warning label."},
+      {id:15,section:"Required Labeling",nec:"NEC 705.10",text:"Is point of interconnection labeled with rated AC output current and nominal operating AC voltage?",tip:"Where solar connects to home panel, a label must show AC amps and voltage."},
+      {id:16,section:"AFCI & Wiring",nec:"NEC 690.11",text:"Is a DC arc-fault circuit interrupter (AFCI) installed and listed for PV systems to protect all DC conductors? (Required since 2017 NEC)",tip:"A safety breaker detects electrical sparks in solar wiring before a fire starts. Required since 2017."},
+      {id:17,section:"Interconnection & Structural",nec:"NEC 705.12(B)(2)",text:"Is back-fed breaker in main panel positioned at opposite end from main breaker and labeled SOLAR or PV SUPPLY with permanent marking?",tip:"The solar breaker must be at far end from main switch and permanently labeled."},
+      {id:18,section:"AFCI & Wiring",nec:"NEC 690.31(A)(B)",text:"Are all exposed DC PV conductors sunlight-resistant, listed for wet locations, and rated for maximum system voltage and current?",tip:"All outdoor solar wiring must be UV-proof, waterproof, and rated for full system power."},
+      {id:19,section:"Interconnection & Structural",nec:"IBC / Local Building Code",text:"Has a licensed structural engineer or AHJ confirmed roof can support additional dead load of PV array including racking and ballast?",tip:"Someone qualified must confirm roof is strong enough for full weight of all panels and mounts."},
+      {id:20,section:"Title 24 — CA Only",nec:"Title 24 §150.1(c)14",ca_only:true,text:"For California new residential construction — does system meet Title 24 mandatory solar PV sizing based on conditioned floor area and climate zone?",tip:"California law requires new homes to have solar sized correctly for home and climate zone."}
+    ];
+
+    // Render checklist
+    function renderChecklist() {
+      if (!jobData) return;
+
+      const sections = {};
+      
+      // Group questions by section
+      questions.forEach(question => {
+        // Skip CA-only questions if not in California
+        if (question.ca_only && jobData.state_code !== 'CA') {
+          return;
+        }
+        
+        if (!sections[question.section]) {
+          sections[question.section] = [];
+        }
+        sections[question.section].push(question);
+      });
+
+      let html = '';
+      
+      Object.entries(sections).forEach(([sectionName, sectionQuestions]) => {
+        html += `
+          <div class="section">
+            <div class="section-header">${sectionName}</div>
+            <div class="section-items">
+        `;
+        
+        sectionQuestions.forEach(question => {
+          const isChecked = checkedItems.has(question.id);
+          const itemClass = isChecked ? 'checked' : '';
+          
+          let questionText = question.text;
+          if (question.dynamic && question.id === 7) {
+            if (jobData.nec_edition === '2017 NEC') {
+              questionText = question.text_2017;
+            } else if (jobData.nec_edition === '2020 NEC' || jobData.nec_edition === '2023 NEC') {
+              questionText = question.text_2020;
+            } else {
+              questionText = `<div class="warn-box">${question.text_unsure}</div>`;
+            }
+          }
+          
+          html += `
+            <div class="checklist-item ${itemClass}">
+              <input 
+                type="checkbox" 
+                class="checklist-checkbox"
+                id="q${question.id}"
+                data-question-id="${question.id}"
+                ${isChecked ? 'checked' : ''}
+              >
+              <div class="checklist-content">
+                <div class="checklist-text">${questionText}</div>
+                <div class="checklist-meta">
+                  <span class="nec-badge">${question.nec}</span>
+                  <div class="tooltip-btn">
+                    ⓘ
+                    <div class="tooltip">${question.tip}</div>
+                  </div>
+                  <span class="save-feedback" id="save${question.id}">✓ Saved</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      });
+      
+      checklistContainerEl.innerHTML = html;
+
+      // Add event listeners
+      document.querySelectorAll('.checklist-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', handleCheckboxChange);
+      });
+    }
+
+    // Handle checkbox change
+    async function handleCheckboxChange(event) {
+      const checkbox = event.target;
+      const questionId = parseInt(checkbox.dataset.questionId);
+      const isChecked = checkbox.checked;
+
+      try {
+        // Save to Supabase
+        await sb.from('checklist_items').upsert(
+          {
+            job_id:      jobId,
+            question_id: questionId,      // must be a number e.g. 1, 2, 3
+            is_checked: checkbox.checked,
+            user_id:     currentUser.id,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'job_id,question_id' }
+        );
+
+        // Update local state
+        if (isChecked) {
+          checkedItems.add(questionId);
+        } else {
+          checkedItems.delete(questionId);
+        }
+
+        // Update UI
+        const item = checkbox.closest('.checklist-item');
+        if (isChecked) {
+          item.classList.add('checked');
+        } else {
+          item.classList.remove('checked');
+        }
+
+        // Show save feedback
+        const feedbackEl = document.getElementById(`save${questionId}`);
+        feedbackEl.classList.add('show');
+        setTimeout(() => {
+          feedbackEl.classList.remove('show');
+        }, 1500);
+
+        updateProgress();
+      } catch (error) {
+        console.error('Error saving checklist item:', error);
+      }
+    }
+
+    // Update progress
+    function updateProgress() {
+      if (!jobData) return;
+
+      const totalQuestions = questions.filter(q => 
+        !q.ca_only || jobData.state_code === 'CA'
+      ).length;
+      
+      const completedCount = checkedItems.size;
+      const percentage = Math.round((completedCount / totalQuestions) * 100);
+
+      progressTextEl.textContent = `Compliance Progress — ${completedCount} of ${totalQuestions} steps completed`;
+      progressFillEl.style.width = `${percentage}%`;
+
+      // Show/hide completion banner
+      if (completedCount === totalQuestions) {
+        completionBannerEl.style.display = 'flex';
+      } else {
+        completionBannerEl.style.display = 'none';
+      }
+    }
+
+    // Handle status change
+    async function handleStatusChange(event) {
+      const newStatus = event.target.value;
+      
+      try {
+        await sb
+          .from('jobs')
+          .update({ status: newStatus })
+          .eq('id', jobId);
+        
+        currentStatusEl.textContent = newStatus;
+      } catch (error) {
+        console.error('Error updating status:', error);
+      }
+    }
+
+    // Handle notes save
+    async function saveNotes() {
+      if (!jobData) return;
+
+      try {
+        await sb
+          .from('jobs')
+          .update({ notes: notesFieldEl.value })
+          .eq('id', jobId);
+      } catch (error) {
+        console.error('Error saving notes:', error);
+      }
+    }
+
+    // Generate PDF
+    async function generatePDF() {
+      const btn = document.getElementById('pdf-btn');
+      btn.textContent = '⏳ Generating...';
+      btn.disabled = true;
+
+      try {
+        // Safety check — make sure jsPDF loaded
+        if (typeof window.jspdf === 'undefined') {
+          alert('PDF library not loaded. Please refresh the page and try again.');
+          btn.textContent = '⬇ Download PDF Report';
+          btn.disabled = false;
+          return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+        // Use job data already loaded on the page
+        // job variable must exist — loaded from Supabase when page opened
+        const customerName = jobData?.customer_name || 'Unknown Customer';
+        const address = jobData?.job_address || '';
+        const city = jobData?.city || '';
+        const state = jobData?.state || '';
+        const systemSize = jobData?.system_size_kw || '';
+        const utility = jobData?.utility_provider || '';
+        const necEdition = jobData?.nec_edition || '2020 NEC';
+        const today = new Date().toLocaleDateString('en-US');
+
+        // Count checked items
+        const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+        const checkedCount = Array.from(allCheckboxes).filter(c => c.checked).length;
+        const totalCount = allCheckboxes.length;
+        const isComplete = checkedCount === totalCount;
+
+        // ---- HEADER ----
+        doc.setFillColor(26, 107, 60);
+        doc.rect(0, 0, 210, 28, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Solar Compliance Agent', 14, 12);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Official Compliance Inspection Report', 14, 20);
+        doc.text('Generated: ' + today, 140, 20);
+
+        // ---- COMPLIANCE STAMP ----
+        if (isComplete) {
+          doc.setFillColor(26, 107, 60);
+          doc.roundedRect(150, 6, 50, 14, 3, 3, 'F');
+          doc.setTextColor(255,255,255);
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'bold');
+          doc.text('COMPLIANT ✓', 175, 15, { align: 'center' });
+        } else {
+          doc.setFillColor(245, 158, 11);
+          doc.roundedRect(140, 6, 60, 14, 3, 3, 'F');
+          doc.setTextColor(255,255,255);
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('IN PROGRESS', 170, 12, { align: 'center' });
+          doc.text(checkedCount + ' of ' + totalCount + ' complete', 170, 18, { align: 'center' });
+        }
+
+        // ---- JOB DETAILS BOX ----
+        doc.setTextColor(0, 0, 0);
+        doc.setFillColor(240, 250, 245);
+        doc.roundedRect(14, 32, 182, 38, 3, 3, 'F');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(26, 107, 60);
+        doc.text('JOB DETAILS', 18, 40);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(60, 60, 60);
+        doc.text('Customer: ' + customerName, 18, 48);
+        doc.text('Address: ' + address + ', ' + city + ', ' + state, 18, 54);
+        doc.text('System Size: ' + systemSize + ' kW', 18, 60);
+        doc.text('Utility: ' + utility, 100, 48);
+        doc.text('NEC Edition: ' + necEdition, 100, 54);
+        doc.text('Report Date: ' + today, 100, 60);
+        doc.text('Status: ' + (isComplete ? 'COMPLETE' : checkedCount + '/' + totalCount + ' done'), 100, 66);
+
+        // ---- CHECKLIST SECTIONS ----
+        let yPos = 76;
+        const sections = {};
+
+        // Build sections from visible checkboxes on the page
+        document.querySelectorAll('.checklist-item').forEach(item => {
+          const section = item.dataset.section || 'General';
+          const questionText = item.querySelector('.checklist-text')?.textContent || '';
+          const necRef = item.querySelector('.nec-badge')?.textContent || '';
+          const isChecked = item.querySelector('input[type="checkbox"]')?.checked || false;
+          if (!sections[section]) sections[section] = [];
+          sections[section].push({ questionText, necRef, isChecked });
+        });
+
+        // If no .checklist-item elements found, use fallback
+        if (Object.keys(sections).length === 0) {
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(26, 107, 60);
+          doc.text('Compliance Checklist', 14, yPos);
+          yPos += 8;
+
+          const rows = [];
+          document.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
+            const label = cb.parentElement?.textContent?.trim() || 'Item ' + (i+1);
+            rows.push([
+              cb.checked ? '✓' : '✗',
+              label.substring(0, 80),
+              cb.checked ? 'Complete' : 'Pending'
+            ]);
+          });
+
+          doc.autoTable({
+            startY: yPos,
+            head: [['', 'Requirement', 'Status']],
+            body: rows,
+            columnStyles: {
+              0: { cellWidth: 8, halign: 'center' },  // ✓/✗
+              1: { cellWidth: 147 },                    // question text
+              2: { cellWidth: 22 }                      // status
+            },
+            styles: {
+              fontSize: 8,
+              cellPadding: 2,
+              overflow: 'linebreak',
+              cellWidth: 'wrap'
+            },
+            headStyles: { fillColor: [26, 107, 60] },
+            tableWidth: 'auto',
+            margin: { left: 14, right: 14 },
+            didParseCell: (data) => {
+              if (data.column.index === 0) {
+                data.cell.styles.textColor = data.cell.raw === '✓'
+                  ? [26, 107, 60] : [220, 38, 38];
+                data.cell.styles.fontStyle = 'bold';
+              }
+              if (data.row.index % 2 === 0 && data.section === 'body') {
+                data.cell.styles.fillColor = [248, 252, 249];
+              }
+            }
+          });
+        } else {
+          // Render each section
+          for (const [sectionName, items] of Object.entries(sections)) {
+            if (yPos > 260) { doc.addPage(); yPos = 20; }
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(26, 107, 60);
+            doc.text(sectionName.toUpperCase(), 14, yPos);
+            yPos += 4;
+
+            const rows = items.map(item => [
+              item.isChecked ? '✓' : '✗',
+              item.questionText.substring(0, 90),
+              item.necRef,
+              item.isChecked ? 'Complete' : 'Pending'
+            ]);
+
+            doc.autoTable({
+              startY: yPos,
+              body: rows,
+              columnStyles: {
+                0: { cellWidth: 8, halign: 'center' },  // ✓/✗
+                1: { cellWidth: 147 },                    // question text
+                2: { cellWidth: 35 },                     // NEC reference
+                3: { cellWidth: 22 }                      // status
+              },
+              styles: {
+                fontSize: 8,
+                cellPadding: 2,
+                overflow: 'linebreak',
+                cellWidth: 'wrap'
+              },
+              headStyles: { fillColor: [26, 107, 60] },
+              tableWidth: 'auto',
+              margin: { left: 14, right: 14 },
+              didParseCell: (data) => {
+                if (data.column.index === 0) {
+                  data.cell.styles.textColor = data.cell.raw === '✓'
+                    ? [26, 107, 60] : [220, 38, 38];
+                  data.cell.styles.fontStyle = 'bold';
+                  data.cell.styles.fontSize = 10;
+                }
+              }
+            });
+            yPos = doc.lastAutoTable.finalY + 8;
+          }
+        }
+
+        // ---- NOTES ----
+        const notes = jobData?.notes;
+        if (notes && notes.trim()) {
+          if (yPos > 250) { doc.addPage(); yPos = 20; }
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(26, 107, 60);
+          doc.text('JOB NOTES', 14, yPos);
+          yPos += 6;
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(60, 60, 60);
+          doc.setFontSize(9);
+          const splitNotes = doc.splitTextToSize(notes, 180);
+          doc.text(splitNotes, 14, yPos);
+        }
+
+        // ---- FOOTER on every page ----
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFillColor(26, 107, 60);
+          doc.rect(0, 287, 210, 10, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(7);
+          doc.text('Solar Compliance Agent — Confidential', 14, 293);
+          doc.text('Page ' + i + ' of ' + pageCount, 105, 293, { align: 'center' });
+          doc.text('Generated by Solar Compliance Agent', 196, 293, { align: 'right' });
+        }
+
+        // ---- SAVE ----
+        const safeName = customerName.replace(/[^a-z0-9]/gi, '') || 'Customer';
+        const safeCity = city.replace(/[^a-z0-9]/gi, '') || 'City';
+        const dateStr = new Date().toISOString().split('T')[0];
+        doc.save(safeName + '-' + safeCity + '-ComplianceReport-' + dateStr + '.pdf');
+
+        btn.textContent = '✓ Downloaded!';
+        setTimeout(() => {
+          btn.textContent = '⬇ Download PDF Report';
+          btn.disabled = false;
+        }, 2000);
+
+      } catch (error) {
+        console.error('PDF Error:', error);
+        alert('PDF failed: ' + error.message + '\n\nCheck browser console (F12) for details.');
+        btn.textContent = '⬇ Download PDF Report';
+        btn.disabled = false;
+      }
+    }
+
+    // Event listeners
+    signOutBtn.addEventListener('click', signOut);
+    statusSelectEl.addEventListener('change', handleStatusChange);
+    notesFieldEl.addEventListener('blur', saveNotes);
+    
+    // PDF buttons
+    // PDF buttons
+    document.getElementById('pdf-btn').addEventListener('click', generatePDF);
+  </script>
+</body>
+</html>

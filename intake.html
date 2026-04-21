@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar Compliance Agent — Submit New Job</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #ffffff;
+      color: #0f172a;
+    }
+
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .logo {
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      color: #1a6b3c;
+      font-size: 20px;
+      text-decoration: none;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-email {
+      color: #475569;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+
+    .btn {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 120ms ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #1a6b3c;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(26, 107, 60, 0.18);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 16px rgba(26, 107, 60, 0.22);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-secondary {
+      background: #f8fafc;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 32px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .form-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+      border: 1px solid #e2e8f0;
+      padding: 32px;
+      width: 100%;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      color: #0f172a;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(26, 107, 60, 0.6);
+      box-shadow: 0 0 0 4px rgba(26, 107, 60, 0.12);
+    }
+
+    input::placeholder {
+      color: #94a3b8;
+    }
+
+    .field-error {
+      color: #dc2626;
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .field-error.show {
+      display: block;
+    }
+
+    input.error,
+    select.error {
+      border-color: #dc2626;
+    }
+
+    input.error:focus,
+    select.error:focus {
+      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+    }
+
+    .submit-section {
+      margin-top: 32px;
+    }
+
+    .error-message {
+      background: rgba(220, 38, 38, 0.08);
+      border: 1px solid rgba(220, 38, 38, 0.25);
+      color: #dc2626;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .nav-inner {
+        padding: 12px 16px;
+      }
+
+      .container {
+        padding: 24px 16px;
+      }
+
+      .form-card {
+        padding: 24px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="dashboard.html" class="logo">⚡ Solar Compliance Agent</a>
+      <div class="nav-actions">
+        <span id="userEmail" class="user-email"></span>
+        <button id="signOutBtn" class="btn btn-secondary">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="form-card">
+      <h1>Submit New Job</h1>
+      
+      <div id="errorMessage" class="error-message"></div>
+
+      <form id="jobForm" novalidate>
+        <!-- Company Name -->
+        <div class="form-group">
+          <label for="companyName">Company Name</label>
+          <input 
+            type="text" 
+            id="companyName" 
+            name="companyName" 
+            required
+            autocomplete="organization"
+          >
+          <div id="companyName-error" class="field-error"></div>
+        </div>
+
+        <!-- Installer Full Name -->
+        <div class="form-group">
+          <label for="installerName">Installer Full Name</label>
+          <input 
+            type="text" 
+            id="installerName" 
+            name="installerName" 
+            required
+            autocomplete="name"
+          >
+          <div id="installerName-error" class="field-error"></div>
+        </div>
+
+        <!-- Customer Full Name -->
+        <div class="form-group">
+          <label for="customerName">Customer Full Name</label>
+          <input 
+            type="text" 
+            id="customerName" 
+            name="customerName" 
+            required
+            autocomplete="name"
+          >
+          <div id="customerName-error" class="field-error"></div>
+        </div>
+
+        <!-- Job Address -->
+        <div class="form-group">
+          <label for="jobAddress">Job Address</label>
+          <input 
+            type="text" 
+            id="jobAddress" 
+            name="jobAddress" 
+            required
+            autocomplete="street-address"
+          >
+          <div id="jobAddress-error" class="field-error"></div>
+        </div>
+
+        <!-- City and State -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="city">City</label>
+            <input 
+              type="text" 
+              id="city" 
+              name="city" 
+              required
+              autocomplete="address-level2"
+            >
+            <div id="city-error" class="field-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="state">State</label>
+            <select id="state" name="state" required>
+              <option value="">Select State</option>
+              <option value="California">California</option>
+              <option value="Texas">Texas</option>
+              <option value="Florida">Florida</option>
+              <option value="Arizona">Arizona</option>
+              <option value="New York">New York</option>
+              <option value="New Jersey">New Jersey</option>
+              <option value="Colorado">Colorado</option>
+              <option value="Other">Other</option>
+            </select>
+            <div id="state-error" class="field-error"></div>
+          </div>
+        </div>
+
+        <!-- ZIP Code and System Size -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="zipCode">ZIP Code</label>
+            <input 
+              type="number" 
+              id="zipCode" 
+              name="zipCode" 
+              required
+              maxlength="5"
+              min="10000"
+              max="99999"
+              autocomplete="postal-code"
+            >
+            <div id="zipCode-error" class="field-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="systemSize">System Size in kW</label>
+            <input 
+              type="number" 
+              id="systemSize" 
+              name="systemSize" 
+              required
+              min="1"
+              max="2000"
+              step="0.01"
+            >
+            <div id="systemSize-error" class="field-error"></div>
+          </div>
+        </div>
+
+        <!-- Utility Provider -->
+        <div class="form-group">
+          <label for="utilityProvider">Utility Provider</label>
+          <input 
+            type="text" 
+            id="utilityProvider" 
+            name="utilityProvider" 
+            required
+            placeholder="e.g. PG&E, ConEd"
+            autocomplete="organization"
+          >
+          <div id="utilityProvider-error" class="field-error"></div>
+        </div>
+
+        <!-- NEC Edition -->
+        <div class="form-group">
+          <label for="necEdition">NEC Edition</label>
+          <select id="necEdition" name="necEdition" required>
+            <option value="2020 NEC" selected>2020 NEC</option>
+            <option value="2017 NEC">2017 NEC</option>
+            <option value="2023 NEC">2023 NEC</option>
+            <option value="Not sure — I will verify with AHJ">Not sure — I will verify with AHJ</option>
+          </select>
+          <div id="necEdition-error" class="field-error"></div>
+        </div>
+
+        <!-- Hidden state_code field -->
+        <input type="hidden" id="stateCode" name="stateCode">
+
+        <div class="submit-section">
+          <button type="submit" id="submitBtn" class="btn btn-primary">
+            Submit Job
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://javojiuejzkockcjivae.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_1GDGd_58rM8sXTNFt93Mbw_yItm-LGv';
+    const { createClient } = supabase;
+
+    // CRITICAL AUTH FIX — first thing in script
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentUser = null;
+
+    sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') {
+        if (!session) {
+          window.location.replace('auth.html');
+        } else {
+          currentUser = session.user;
+          updateNavbar();
+        }
+      }
+      if (event === 'SIGNED_OUT') {
+        window.location.replace('auth.html');
+      }
+    });
+
+    // DOM elements
+    const userEmailEl = document.getElementById('userEmail');
+    const signOutBtn = document.getElementById('signOutBtn');
+    const form = document.getElementById('jobForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorMessageEl = document.getElementById('errorMessage');
+    const stateSelect = document.getElementById('state');
+    const stateCodeInput = document.getElementById('stateCode');
+
+    // State to state code mapping
+    const stateCodeMap = {
+      'California': 'CA',
+      'Texas': 'TX',
+      'Florida': 'FL',
+      'Arizona': 'AZ',
+      'New York': 'NY',
+      'New Jersey': 'NJ',
+      'Colorado': 'CO',
+      'Other': 'OT'
+    };
+
+    // Update navbar with user info
+    function updateNavbar() {
+      if (currentUser && userEmailEl) {
+        userEmailEl.textContent = currentUser.email;
+      }
+    }
+
+    // Sign out function
+    async function signOut() {
+      try {
+        await sb.auth.signOut();
+        window.location.replace('auth.html');
+      } catch (error) {
+        console.error('Sign out error:', error);
+      }
+    }
+
+    // Auto-set state_code when state dropdown changes
+    stateSelect.addEventListener('change', (e) => {
+      const selectedState = e.target.value;
+      const stateCode = stateCodeMap[selectedState] || 'OT';
+      stateCodeInput.value = stateCode;
+    });
+
+    // Show error message
+    function showError(message) {
+      errorMessageEl.textContent = message;
+      errorMessageEl.classList.add('show');
+    }
+
+    // Hide error message
+    function hideError() {
+      errorMessageEl.classList.remove('show');
+      errorMessageEl.textContent = '';
+    }
+
+    // Show field error
+    function showFieldError(fieldId, message) {
+      const field = document.getElementById(fieldId);
+      const errorEl = document.getElementById(`${fieldId}-error`);
+      
+      if (field) {
+        field.classList.add('error');
+      }
+      if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.classList.add('show');
+      }
+    }
+
+    // Clear field error
+    function clearFieldError(fieldId) {
+      const field = document.getElementById(fieldId);
+      const errorEl = document.getElementById(`${fieldId}-error`);
+      
+      if (field) {
+        field.classList.remove('error');
+      }
+      if (errorEl) {
+        errorEl.classList.remove('show');
+        errorEl.textContent = '';
+      }
+    }
+
+    // Clear all field errors
+    function clearAllFieldErrors() {
+      const fieldIds = [
+        'companyName', 'installerName', 'customerName', 'jobAddress',
+        'city', 'state', 'zipCode', 'systemSize', 
+        'utilityProvider', 'necEdition'
+      ];
+      
+      fieldIds.forEach(fieldId => clearFieldError(fieldId));
+    }
+
+    // Validate form
+    function validateForm() {
+      clearAllFieldErrors();
+      hideError();
+      
+      let isValid = true;
+
+      // Company Name
+      const companyName = document.getElementById('companyName').value.trim();
+      if (!companyName) {
+        showFieldError('companyName', 'Company Name is required');
+        isValid = false;
+      }
+
+      // Installer Name
+      const installerName = document.getElementById('installerName').value.trim();
+      if (!installerName) {
+        showFieldError('installerName', 'Installer Full Name is required');
+        isValid = false;
+      }
+
+      // Customer Name
+      const customerName = document.getElementById('customerName').value.trim();
+      if (!customerName) {
+        showFieldError('customerName', 'Customer Full Name is required');
+        isValid = false;
+      }
+
+      // Job Address
+      const jobAddress = document.getElementById('jobAddress').value.trim();
+      if (!jobAddress) {
+        showFieldError('jobAddress', 'Job Address is required');
+        isValid = false;
+      }
+
+      // City
+      const city = document.getElementById('city').value.trim();
+      if (!city) {
+        showFieldError('city', 'City is required');
+        isValid = false;
+      }
+
+      // State
+      const state = document.getElementById('state').value;
+      if (!state) {
+        showFieldError('state', 'State is required');
+        isValid = false;
+      }
+
+      // ZIP Code
+      const zipCode = document.getElementById('zipCode').value.trim();
+      if (!zipCode) {
+        showFieldError('zipCode', 'ZIP Code is required');
+        isValid = false;
+      } else if (!/^\d{5}$/.test(zipCode)) {
+        showFieldError('zipCode', 'ZIP Code must be exactly 5 digits');
+        isValid = false;
+      }
+
+      // System Size
+      const systemSize = document.getElementById('systemSize').value.trim();
+      if (!systemSize) {
+        showFieldError('systemSize', 'System Size is required');
+        isValid = false;
+      } else {
+        const size = parseFloat(systemSize);
+        if (isNaN(size) || size < 1 || size > 2000) {
+          showFieldError('systemSize', 'System Size must be between 1 and 2000 kW');
+          isValid = false;
+        }
+      }
+
+      // Utility Provider
+      const utilityProvider = document.getElementById('utilityProvider').value.trim();
+      if (!utilityProvider) {
+        showFieldError('utilityProvider', 'Utility Provider is required');
+        isValid = false;
+      }
+
+      // NEC Edition
+      const necEdition = document.getElementById('necEdition').value;
+      if (!necEdition) {
+        showFieldError('necEdition', 'NEC Edition is required');
+        isValid = false;
+      }
+
+      return isValid;
+    }
+
+    // Handle form submission
+    async function handleSubmit(e) {
+      e.preventDefault();
+      
+      if (!currentUser) {
+        showError('You must be logged in to submit a job');
+        return;
+      }
+
+      if (!validateForm()) {
+        return;
+      }
+
+      // Set loading state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const jobData = {
+          company_name: document.getElementById('companyName').value.trim(),
+          installer_name: document.getElementById('installerName').value.trim(),
+          customer_name: document.getElementById('customerName').value.trim(),
+          job_address: document.getElementById('jobAddress').value.trim(),
+          city: document.getElementById('city').value.trim(),
+          state: document.getElementById('state').value,
+          state_code: document.getElementById('stateCode').value,
+          zip_code: document.getElementById('zipCode').value.trim(),
+          system_size_kw: parseFloat(document.getElementById('systemSize').value.trim()),
+          utility_provider: document.getElementById('utilityProvider').value.trim(),
+          nec_edition: document.getElementById('necEdition').value,
+          user_id: currentUser.id,
+          status: 'pending'
+        };
+
+        const { data, error } = await sb
+          .from('jobs')
+          .insert([jobData]);
+
+        if (error) {
+          showError(error.message || 'Failed to submit job');
+        } else {
+          // Success - redirect to dashboard
+          window.location.replace('dashboard.html');
+        }
+      } catch (error) {
+        showError('An unexpected error occurred. Please try again.');
+      } finally {
+        // Reset loading state
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Job';
+      }
+    }
+
+    // Event listeners
+    signOutBtn.addEventListener('click', signOut);
+    form.addEventListener('submit', handleSubmit);
+
+    // Clear field errors on input
+    const fieldIds = [
+      'companyName', 'installerName', 'customerName', 'jobAddress',
+      'city', 'state', 'zipCode', 'systemSize', 
+      'utilityProvider', 'necEdition'
+    ];
+
+    fieldIds.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.addEventListener('input', () => clearFieldError(fieldId));
+        field.addEventListener('change', () => clearFieldError(fieldId));
+      }
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      // Auth state change will trigger updateNavbar()
+    });
+  </script>
+</body>
+</html>
