@@ -1014,19 +1014,19 @@
         // ---- COMPLIANCE STAMP ----
         if (isComplete) {
           doc.setFillColor(26, 107, 60);
-          doc.roundedRect(150, 6, 50, 14, 3, 3, 'F');
+          doc.roundedRect(148, 5, 48, 16, 3, 3, 'F');
           doc.setTextColor(255,255,255);
           doc.setFontSize(11);
           doc.setFont('helvetica', 'bold');
-          doc.text('COMPLIANT ✓', 175, 15, { align: 'center' });
+          doc.text('COMPLIANT ✓', 172, 15, { align: 'center' });
         } else {
           doc.setFillColor(245, 158, 11);
-          doc.roundedRect(140, 6, 60, 14, 3, 3, 'F');
+          doc.roundedRect(138, 5, 58, 16, 3, 3, 'F');
           doc.setTextColor(255,255,255);
           doc.setFontSize(9);
           doc.setFont('helvetica', 'bold');
-          doc.text('IN PROGRESS', 170, 12, { align: 'center' });
-          doc.text(checkedCount + ' of ' + totalCount + ' complete', 170, 18, { align: 'center' });
+          doc.text('IN PROGRESS', 167, 11, { align: 'center' });
+          doc.text(checkedCount+' of '+totalCount+' complete', 167, 17, { align: 'center' });
         }
 
         // ---- JOB DETAILS BOX ----
@@ -1081,30 +1081,47 @@
 
           doc.autoTable({
             startY: yPos,
-            head: [['', 'Requirement', 'Status']],
+            head: [['', 'Compliance Requirement', 'Code Reference', 'Status']],
             body: rows,
+            tableWidth: 182,
+            margin: { left: 14, right: 14 },
             columnStyles: {
-              0: { cellWidth: 8, halign: 'center' },  // ✓/✗
-              1: { cellWidth: 147 },                    // question text
-              2: { cellWidth: 22 }                      // status
+              0: { cellWidth: 8,   halign: 'center', fontStyle: 'bold', fontSize: 10 },
+              1: { cellWidth: 100, overflow: 'linebreak' },
+              2: { cellWidth: 42,  overflow: 'linebreak' },
+              3: { cellWidth: 30,  halign: 'center' }
             },
             styles: {
-              fontSize: 8,
-              cellPadding: 2,
+              fontSize: 7.5,
+              cellPadding: 2.5,
               overflow: 'linebreak',
-              cellWidth: 'wrap'
+              valign: 'middle',
+              lineColor: [220, 220, 220],
+              lineWidth: 0.1
             },
-            headStyles: { fillColor: [26, 107, 60] },
-            tableWidth: 'auto',
-            margin: { left: 14, right: 14 },
-            didParseCell: (data) => {
-              if (data.column.index === 0) {
+            headStyles: {
+              fillColor: [26, 107, 60],
+              textColor: [255, 255, 255],
+              fontSize: 8,
+              fontStyle: 'bold',
+              cellPadding: 3
+            },
+            alternateRowStyles: {
+              fillColor: [245, 252, 248]
+            },
+            didParseCell: function(data) {
+              if (data.section === 'body' && data.column.index === 0) {
                 data.cell.styles.textColor = data.cell.raw === '✓'
-                  ? [26, 107, 60] : [220, 38, 38];
+                  ? [26, 107, 60]
+                  : [220, 38, 38];
                 data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.fontSize = 11;
               }
-              if (data.row.index % 2 === 0 && data.section === 'body') {
-                data.cell.styles.fillColor = [248, 252, 249];
+              if (data.section === 'body' && data.column.index === 3) {
+                data.cell.styles.textColor = data.cell.raw === 'Complete'
+                  ? [26, 107, 60]
+                  : [180, 120, 0];
+                data.cell.styles.fontStyle = 'bold';
               }
             }
           });
@@ -1128,28 +1145,47 @@
 
             doc.autoTable({
               startY: yPos,
+              head: [['', 'Compliance Requirement', 'Code Reference', 'Status']],
               body: rows,
+              tableWidth: 182,
+              margin: { left: 14, right: 14 },
               columnStyles: {
-                0: { cellWidth: 8, halign: 'center' },  // ✓/✗
-                1: { cellWidth: 147 },                    // question text
-                2: { cellWidth: 35 },                     // NEC reference
-                3: { cellWidth: 22 }                      // status
+                0: { cellWidth: 8,   halign: 'center', fontStyle: 'bold', fontSize: 10 },
+                1: { cellWidth: 100, overflow: 'linebreak' },
+                2: { cellWidth: 42,  overflow: 'linebreak' },
+                3: { cellWidth: 30,  halign: 'center' }
               },
               styles: {
-                fontSize: 8,
-                cellPadding: 2,
+                fontSize: 7.5,
+                cellPadding: 2.5,
                 overflow: 'linebreak',
-                cellWidth: 'wrap'
+                valign: 'middle',
+                lineColor: [220, 220, 220],
+                lineWidth: 0.1
               },
-              headStyles: { fillColor: [26, 107, 60] },
-              tableWidth: 'auto',
-              margin: { left: 14, right: 14 },
-              didParseCell: (data) => {
-                if (data.column.index === 0) {
+              headStyles: {
+                fillColor: [26, 107, 60],
+                textColor: [255, 255, 255],
+                fontSize: 8,
+                fontStyle: 'bold',
+                cellPadding: 3
+              },
+              alternateRowStyles: {
+                fillColor: [245, 252, 248]
+              },
+              didParseCell: function(data) {
+                if (data.section === 'body' && data.column.index === 0) {
                   data.cell.styles.textColor = data.cell.raw === '✓'
-                    ? [26, 107, 60] : [220, 38, 38];
+                    ? [26, 107, 60]
+                    : [220, 38, 38];
                   data.cell.styles.fontStyle = 'bold';
-                  data.cell.styles.fontSize = 10;
+                  data.cell.styles.fontSize = 11;
+                }
+                if (data.section === 'body' && data.column.index === 3) {
+                  data.cell.styles.textColor = data.cell.raw === 'Complete'
+                    ? [26, 107, 60]
+                    : [180, 120, 0];
+                  data.cell.styles.fontStyle = 'bold';
                 }
               }
             });
