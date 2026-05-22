@@ -639,7 +639,11 @@
           status:          'pending'
         };
 
-        console.log('Saving job:', insertData);
+        console.log('Saving:', {
+          customer_name: document.getElementById('customer_name').value,
+          installer_name: document.getElementById('installer_name').value,
+          company_name: document.getElementById('company_name').value
+        });
 
         const { data, error } = await sb
           .from('jobs')
