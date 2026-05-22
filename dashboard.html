@@ -485,9 +485,19 @@
         return;
       }
 
-      jobsBody.innerHTML = filteredJobs.map(job => `
+      jobsBody.innerHTML = filteredJobs.map(job => {
+        const displayName =
+          (job.customer_name && job.customer_name.trim())
+            ? job.customer_name.trim()
+          : (job.installer_name && job.installer_name.trim())
+            ? job.installer_name.trim()
+          : (job.company_name && job.company_name.trim())
+            ? job.company_name.trim()
+          : 'No name';
+
+        return `
         <tr>
-          <td>${escapeHtml(job.customer_full_name || '—')}</td>
+          <td>${escapeHtml(displayName)}</td>
           <td>${escapeHtml(job.job_address || '—')}</td>
           <td>${escapeHtml(job.city || '—')}</td>
           <td>${escapeHtml(job.state || '—')}</td>
@@ -499,7 +509,8 @@
             <a href="checklist.html?id=${job.id}" class="btn-action">View Checklist</a>
           </td>
         </tr>
-      `).join('');
+        `;
+      }).join('');
     }
 
     // Filter jobs based on search
