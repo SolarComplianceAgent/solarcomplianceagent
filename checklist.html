@@ -864,6 +864,66 @@
       });
     }
 
+    async function analyzeWithGemini() {
+      if (!photoBase64) {
+        alert('Please upload a photo first');
+        return;
+      }
+
+      const btn = document.getElementById('analyze-btn');
+      const loading = document.getElementById('ai-loading');
+      const results = document.getElementById('ai-results');
+
+      btn.disabled = true;
+      btn.textContent = 'Analyzing...';
+      loading.style.display = 'block';
+      results.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: photoBase64,
+            mimeType: photoMimeType,
+            jobState: jobData?.state,
+            necEdition: jobData?.nec_edition
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        displayAIResults(result);
+        
+        // Store result for PDF generation
+        window.aiInspectionResult = result;
+        
+        // Auto-tick passing items
+        if (result.findings) {
+          autoTickChecklist(result.findings);
+        }
+
+      } catch (error) {
+        console.error('AI analysis error:', error);
+        alert('Analysis failed: ' + error.message);
+        results.innerHTML = `
+          <div style="color:#f87171;padding:12px;border-radius:8px;
+            background:#2a1a00;border:1px solid #92400e">
+            ❌ Analysis failed: ${error.message}
+          </div>
+        `;
+        results.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔍 Analyze with AI';
+        loading.style.display = 'none';
+      }
+    }
+
     // Update navbar with user info
     function updateNavbar() {
       if (currentUser && userEmailEl) {
@@ -1376,6 +1436,98 @@
             yPos = doc.lastAutoTable.finalY + 8;
           }
         }
+
+        // ---- AI INSPECTION RESULTS IN PDF ----
+        const aiResult = window.aiInspectionResult;
+
+        if (aiResult && aiResult.findings && aiResult.findings.length > 0) {
+
+          // Add new page if not enough space
+          if (doc.lastAutoTable.finalY > 220) {
+            doc.addPage();
+            yPos = 20;
+          } else {
+            yPos = doc.lastAutoTable.finalY + 10;
+          }
+
+          // Section header
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(26, 107, 60);
+          doc.text('AI PHOTO INSPECTION', 14, yPos);
+          yPos += 4;
+
+          // Overall result badge
+          const overallColor = aiResult.overall === 'PASS'
+            ? [26, 107, 60]
+            : aiResult.overall === 'NEEDS_ATTENTION'
+            ? [180, 100, 0]
+            : [100, 100, 100];
+
+          doc.setFillColor(...overallColor);
+          doc.roundedRect(14, yPos, 60, 10, 2, 2, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.text(aiResult.overall.replace('_', ' '), 44, yPos + 7, { align: 'center' });
+
+          doc.setTextColor(100, 100, 100);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          doc.text('Confidence: ' + (aiResult.confidence || 'MEDIUM'), 80, yPos + 7);
+
+          yPos += 16;
+
+          // Summary
+          doc.setTextColor(60, 60, 60);
+          doc.setFontSize(9);
+          const summaryLines = doc.splitTextToSize(aiResult.summary || '', 180);
+          doc.text(summaryLines, 14, yPos);
+          yPos += summaryLines.length * 5 + 6;
+
+          // Findings table
+          const findingRows = aiResult.findings.map(f => [
+            f.status === 'OK' ? '✓' : f.status === 'MISSING' ? '✗' : '?',
+            f.item || '',
+            f.detail || '',
+            f.nec || ''
+          ]);
+
+          doc.autoTable({
+            startY: yPos,
+            head: [['', 'Item', 'Finding', 'Code']],
+            body: findingRows,
+            tableWidth: 182,
+            margin: { left: 14, right: 14 },
+            columnStyles: {
+              0: { cellWidth: 8, halign: 'center', fontStyle: 'bold', fontSize: 11 },
+              1: { cellWidth: 40 },
+              2: { cellWidth: 100, overflow: 'linebreak' },
+              3: { cellWidth: 34 }
+            },
+            styles: { fontSize: 8, cellPadding: 2.5 },
+            headStyles: { fillColor: [26, 107, 60] },
+            didParseCell: (data) => {
+              if (data.section === 'body' && data.column.index === 0) {
+                data.cell.styles.textColor =
+                  data.cell.raw === '✓' ? [26, 107, 60] :
+                  data.cell.raw === '✗' ? [220, 38, 38] :
+                  [180, 100, 0];
+              }
+            }
+          });
+
+          yPos = doc.lastAutoTable.finalY + 6;
+
+          // Disclaimer
+          doc.setFontSize(7);
+          doc.setTextColor(150, 150, 150);
+          doc.text(
+            'AI analysis powered by Google Gemini. Verify all findings with your local AHJ before permit submission.',
+            14, yPos
+          );
+        }
+        // ---- END AI SECTION ----
 
         // ---- NOTES ----
         const notes = jobData?.notes;
