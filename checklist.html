@@ -609,6 +609,82 @@
       </div>
     </div>
 
+    <div id="ai-inspection-section" style="
+  background:linear-gradient(135deg,#1a3a2a,#0d2a1a);
+  border:1px solid #1a6b3c;border-radius:12px;
+  padding:20px;margin:16px 0">
+
+  <h3 style="color:#4ade80;margin:0 0 4px;font-size:15px">
+    📷 AI Photo Inspection
+  </h3>
+  <p style="color:#86efac;font-size:12px;margin:0 0 14px;line-height:1.6">
+    Upload a photo of your installation — AI checks for
+    missing labels, setback issues, and NEC violations instantly.
+  </p>
+
+  <!-- Drop zone -->
+  <div id="drop-zone"
+    onclick="document.getElementById('photo-input').click()"
+    ondragover="event.preventDefault();this.style.borderColor='#4ade80'"
+    ondragleave="this.style.borderColor='#1a6b3c'"
+    ondrop="handleDrop(event)"
+    style="border:2px dashed #1a6b3c;border-radius:8px;
+    padding:28px 20px;text-align:center;cursor:pointer;
+    background:#0d1a12;transition:all .2s">
+    <div style="font-size:36px;margin-bottom:8px">📷</div>
+    <div style="color:#4ade80;font-size:13px;font-weight:600">
+      Tap to take photo or upload
+    </div>
+    <div style="color:#86efac;font-size:11px;margin-top:4px">
+      Roof • Panels • Labels • Conduit • Disconnect
+    </div>
+  </div>
+
+  <!-- File input — capture=environment opens camera on mobile -->
+  <input type="file" id="photo-input"
+    accept="image/*" capture="environment"
+    style="display:none" onchange="handlePhotoSelect(event)">
+
+  <!-- Preview + analyze button -->
+  <div id="photo-preview" style="display:none;margin-top:12px">
+    <img id="preview-img" style="width:100%;max-height:260px;
+      object-fit:cover;border-radius:8px;
+      border:2px solid #1a6b3c">
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="resetPhoto()"
+        style="flex:1;background:transparent;color:#86efac;
+        border:1px solid #1a6b3c;padding:10px;
+        border-radius:8px;font-size:13px;cursor:pointer">
+        ↩ Change Photo
+      </button>
+      <button onclick="analyzeWithGemini()" id="analyze-btn"
+        style="flex:2;background:#1a6b3c;color:#fff;
+        border:none;padding:10px;border-radius:8px;
+        font-size:13px;font-weight:600;cursor:pointer">
+        🔍 Analyze with AI
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div id="ai-loading" style="display:none;text-align:center;
+    padding:20px;color:#86efac;font-size:13px">
+    <div style="font-size:28px;margin-bottom:8px;
+      animation:spin 1s linear infinite;display:inline-block">⚙</div>
+    <div>AI is analyzing your installation...</div>
+    <div style="font-size:11px;color:#4b6b5a;margin-top:4px">
+      Checking labels, setbacks, and code compliance
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="ai-results" style="display:none;margin-top:12px"></div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
     <div class="completion-banner" id="completionBanner" style="display: none;">
       <div class="completion-content">
         <h3>🎉 All compliance steps complete! Ready for submission.</h3>
@@ -679,6 +755,114 @@
 
     let jobData = null;
     let checkedItems = new Set();
+
+    let photoBase64 = null;
+    let photoMimeType = null;
+
+    function handlePhotoSelect(event) {
+      const file = event.target.files[0];
+      if (file) loadPhoto(file);
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      document.getElementById('drop-zone').style.borderColor = '#1a6b3c';
+      const file = event.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) loadPhoto(file);
+    }
+
+    function loadPhoto(file) {
+      photoMimeType = file.type;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        photoBase64 = e.target.result.split(',')[1];
+        document.getElementById('preview-img').src = e.target.result;
+        document.getElementById('drop-zone').style.display = 'none';
+        document.getElementById('photo-preview').style.display = 'block';
+        document.getElementById('ai-results').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetPhoto() {
+      photoBase64 = null;
+      document.getElementById('photo-input').value = '';
+      document.getElementById('drop-zone').style.display = 'block';
+      document.getElementById('photo-preview').style.display = 'none';
+      document.getElementById('ai-results').style.display = 'none';
+    }
+
+    function displayAIResults(result) {
+      const container = document.getElementById('ai-results');
+      container.style.display = 'block';
+
+      const colors = {
+        PASS: { main:'#4ade80', bg:'#0d2a1a', border:'#1a6b3c' },
+        NEEDS_ATTENTION: { main:'#fbbf24', bg:'#2a1a00', border:'#92400e' },
+        CANNOT_DETERMINE: { main:'#94a3b8', bg:'#1a1a2e', border:'#334155' }
+      };
+      const c = colors[result.overall] || colors.CANNOT_DETERMINE;
+
+      const findingsHTML = (result.findings || []).map(f => {
+        const icon = f.status==='OK' ? '✅'
+          : f.status==='MISSING' ? '❌' : '⚠️';
+        const col = f.status==='OK' ? '#4ade80'
+          : f.status==='MISSING' ? '#f87171' : '#fbbf24';
+        return `
+          <div style="background:#0d1117;border-radius:6px;
+            padding:10px 12px;margin-bottom:6px;
+            border-left:3px solid ${col}">
+            <div style="font-size:12px;font-weight:600;
+              color:${col};margin-bottom:3px">
+              ${icon} ${f.item}
+            </div>
+            <div style="font-size:11px;color:#e2e8f0;
+              line-height:1.6">${f.detail}</div>
+            <div style="font-size:10px;color:#4b5563;
+              margin-top:3px">${f.nec}</div>
+          </div>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div style="background:${c.bg};border:1.5px solid ${c.border};
+          border-radius:10px;padding:14px">
+          <div style="display:flex;justify-content:space-between;
+            align-items:center;margin-bottom:8px">
+            <div style="font-size:14px;font-weight:700;color:${c.main}">
+              ${result.overall==='PASS' ? '✅' :
+                result.overall==='NEEDS_ATTENTION' ? '⚠️' : 'ℹ️'}
+              ${result.overall.replace('_',' ')}
+            </div>
+            <div style="font-size:10px;color:#4b5563">
+              Confidence: ${result.confidence || 'MEDIUM'}
+            </div>
+          </div>
+          <div style="font-size:12px;color:#86efac;
+            margin-bottom:12px;line-height:1.6">
+            ${result.summary}
+          </div>
+          ${findingsHTML}
+          <div style="font-size:10px;color:#4b5563;
+            margin-top:10px;line-height:1.5">
+            ⓘ Powered by Google Gemini AI. Always verify
+            with your local AHJ before permit submission.
+          </div>
+        </div>`;
+    }
+
+    function autoTickChecklist(findings) {
+      findings.forEach(f => {
+        if (f.status === 'OK' && f.checklist_id) {
+          const cb = document.querySelector(
+            `input[data-question-id="${f.checklist_id}"]` 
+          );
+          if (cb && !cb.checked) {
+            cb.checked = true;
+            cb.dispatchEvent(new Event('change'));
+          }
+        }
+      });
+    }
 
     // Update navbar with user info
     function updateNavbar() {
