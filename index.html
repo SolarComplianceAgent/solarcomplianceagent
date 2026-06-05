@@ -32,7 +32,7 @@
     sb.auth.onAuthStateChange((event, session) => {
       if (event === 'INITIAL_SESSION') {
         window.location.replace(
-          session ? 'dashboard.html' : 'auth.html'
+          session ? 'dashboard.html' : 'landing.html'
         );
       }
     });
