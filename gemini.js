@@ -1,14 +1,24 @@
-export default async function handler(req, res) {
+const fetch = (...args) =>
+  import('node-fetch').then(({default: f}) => f(...args));
+
+module.exports = async function handler(req, res) {
+  // Allow CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { imageBase64, mimeType, jobState, necEdition } = req.body;
-
   const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
   if (!GEMINI_KEY) {
-    return res.status(500).json({ error: 'API key not configured in environment variables' });
+    return res.status(500).json({
+      error: 'GEMINI_API_KEY not set in Vercel environment variables'
+    });
   }
 
   const prompt = `You are a solar installation NEC compliance inspector.
@@ -26,7 +36,7 @@ Respond ONLY with valid JSON no markdown no extra text:
 {
   "overall": "NEEDS_ATTENTION",
   "confidence": "MEDIUM",
-  "summary": "plain English summary for installer",
+  "summary": "plain English summary",
   "findings": [
     {
       "status": "MISSING",
@@ -47,19 +57,11 @@ Respond ONLY with valid JSON no markdown no extra text:
         body: JSON.stringify({
           contents: [{
             parts: [
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: imageBase64
-                }
-              },
+              { inline_data: { mime_type: mimeType || 'image/jpeg', data: imageBase64 } },
               { text: prompt }
             ]
           }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 1000
-          }
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1000 }
         })
       }
     );
@@ -67,10 +69,12 @@ Respond ONLY with valid JSON no markdown no extra text:
     const data = await response.json();
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     text = text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}');
-    const result = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1) throw new Error('No JSON in response');
+    const result = JSON.parse(text.substring(start, end + 1));
     return res.status(200).json(result);
+
   } catch (error) {
     return res.status(500).json({
       overall: 'CANNOT_DETERMINE',
@@ -79,4 +83,4 @@ Respond ONLY with valid JSON no markdown no extra text:
       findings: []
     });
   }
-}
+};
