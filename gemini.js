@@ -13,7 +13,7 @@ module.exports = async function handler(req, res) {
   }
 
   const { imageBase64, mimeType, jobState, necEdition } = req.body;
-  const GEMINI_KEY = process.env.GEMINI_API_KEY;;
+  const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
   if (!GEMINI_KEY) {
     return res.status(500).json({
