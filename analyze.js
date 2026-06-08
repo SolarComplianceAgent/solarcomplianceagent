@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'No image provided' });
   }
 
-  const GEMINI_KEY = process.env.GEMINI_API_KEY;
+  const GEMINI_KEY = AQ.Ab8RN6L23P7hfovE2rcJ30uLvkbF6_2wUV5UO798YKkLJN2Bag;
 
   if (!GEMINI_KEY) {
     return res.status(500).json({ error: 'API key not configured' });
