@@ -880,7 +880,7 @@
       if (resultsDiv) resultsDiv.style.display = 'none';
 
       // OpenRouter key — works in browser, no restrictions
-      const OR_KEY = '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';
+      const OR_KEY = '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';
 
       const necEdition = jobData?.nec_edition || '2020 NEC';
       const jobState = jobData?.state || 'California';
@@ -922,7 +922,7 @@ Respond ONLY with this JSON no extra text:
             'X-Title': 'Solar Compliance Agent'
           },
           body: JSON.stringify({
-            model: 'google/gemini-flash-1.5',
+            model: 'google/gemini-2.0-flash-001',
             messages: [{
               role: 'user',
               content: [
