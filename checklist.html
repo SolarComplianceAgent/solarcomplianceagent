@@ -1350,8 +1350,8 @@ Respond ONLY with this JSON no extra text:
         // Build sections from visible checkboxes on the page
         document.querySelectorAll('.checklist-item').forEach(item => {
           const section = item.dataset.section || 'General';
-          const questionText = item.querySelector('.checklist-text')?.textContent || '';
-          const necRef = item.querySelector('.nec-badge')?.textContent || '';
+          const questionText = item.querySelector('.checklist-text')?.textContent?.replace(/&([a-z]+);/gi, (match, entity) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[entity] || match)) || '';
+          const necRef = item.querySelector('.nec-badge')?.textContent?.replace(/&([a-z]+);/gi, (match, entity) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[entity] || match)) || '';
           const isChecked = item.querySelector('input[type="checkbox"]')?.checked || false;
           if (!sections[section]) sections[section] = [];
           sections[section].push({ questionText, necRef, isChecked });
@@ -1367,7 +1367,7 @@ Respond ONLY with this JSON no extra text:
 
           const rows = [];
           document.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
-            const label = cb.parentElement?.textContent?.trim() || 'Item ' + (i+1);
+            const label = cb.parentElement?.textContent?.trim()?.replace(/&([a-z]+);/gi, (match, entity) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[entity] || match)) || 'Item ' + (i+1);
             rows.push([
               cb.checked ? '✓' : '✗',
               label.substring(0, 80),
