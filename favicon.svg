@@ -1,15 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="32" fill="#1a6b3c"/>
-  <g fill="#ffffff">
-    <!-- Solar panel grid - 3x2 rectangles -->
-    <rect x="14" y="18" width="12" height="10" rx="1"/>
-    <rect x="28" y="18" width="12" height="10" rx="1"/>
-    <rect x="42" y="18" width="12" height="10" rx="1"/>
-    <rect x="14" y="30" width="12" height="10" rx="1"/>
-    <rect x="28" y="30" width="12" height="10" rx="1"/>
-    <rect x="42" y="30" width="12" height="10" rx="1"/>
-    <!-- Small stand/frame at bottom -->
-    <rect x="20" y="42" width="28" height="4" rx="1"/>
-    <rect x="32" y="46" width="4" height="6" rx="1"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="50" fill="#ffffff"/>
+  <polygon points="58,10 28,55 48,55 42,90 72,45 52,45" 
+   fill="#ffc83d" stroke="#040404" stroke-width="3"/>
 </svg>
