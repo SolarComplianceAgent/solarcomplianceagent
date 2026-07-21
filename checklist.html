@@ -1164,11 +1164,11 @@ Respond ONLY with this JSON no extra text:
 
     // Questions array
     const questions = [
-      {id:1,section:"Setbacks & Access",nec:"IFC 605.11.1",text:"Does installation provide at least two minimum 36-inch-wide pathways on separate roof planes from lowest roof edge to ridge?",tip:"Two clear 3-foot-wide paths must run from roof edge to ridge for firefighter access."},
-      {id:2,section:"Setbacks & Access",nec:"IFC 605.11.1",text:"Is at least one 36-inch access pathway located on street or driveway side of roof?",tip:"One pathway must face street so firefighters can reach roof from their truck."},
-      {id:3,section:"Setbacks & Access",nec:"IFC 605.11.3",text:"For arrays covering 33% or less of roof area — is there an 18-inch clear setback on both sides of any horizontal ridge? (Verify with AHJ)",tip:"If panels cover less than one third of roof, leave an 18-inch gap along roof peak on both sides."},
-      {id:4,section:"Setbacks & Access",nec:"IFC 605.11.3",text:"For arrays covering more than 33% of roof area — is there a 36-inch clear setback on both sides of any horizontal ridge? (Verify AHJ local amendments)",tip:"If panels cover more than one third of roof, leave a 3-foot gap along roof peak on both sides."},
-      {id:5,section:"Setbacks & Access",nec:"IFC 605.11.2",text:"Are modules kept clear of roof area directly below emergency escape and rescue openings with a 36-inch pathway to opening?",tip:"No panels can block bedroom escape windows. A 3-foot clear path must lead to every escape window."},
+      {id:1,section:"Setbacks & Access",nec:"CFC 1205.2.1.1",text:"Does installation provide at least two minimum 36-inch-wide pathways on separate roof planes from lowest roof edge to ridge?",tip:"Two clear 3-foot-wide paths must run from roof edge to ridge for firefighter access."},
+      {id:2,section:"Setbacks & Access",nec:"CFC 1205.2.1.1",text:"Is at least one 36-inch access pathway located on street or driveway side of roof?",tip:"One pathway must face street so firefighters can reach roof from their truck."},
+      {id:3,section:"Setbacks & Access",nec:"CFC 1205.2.1.3",text:"For arrays covering 33% or less of roof area — is there an 18-inch clear setback on both sides of any horizontal ridge? (Verify with AHJ)",tip:"If panels cover less than one third of roof, leave an 18-inch gap along roof peak on both sides."},
+      {id:4,section:"Setbacks & Access",nec:"CFC 1205.2.1.3",text:"For arrays covering more than 33% of roof area — is there a 36-inch clear setback on both sides of any horizontal ridge? (Verify AHJ local amendments)",tip:"If panels cover more than one third of roof, leave a 3-foot gap along roof peak on both sides."},
+      {id:5,section:"Setbacks & Access",nec:"CFC 1205.2.1.2",text:"Are modules kept clear of roof area directly below emergency escape and rescue openings with a 36-inch pathway to opening?",tip:"No panels can block bedroom escape windows. A 3-foot clear path must lead to every escape window."},
       {id:6,section:"Rapid Shutdown",nec:"NEC 690.12(B)(1)",text:"Is rapid shutdown initiation device installed in a readily accessible location?",tip:"The emergency shutoff switch must be easy for a firefighter to reach — not hidden or locked away."},
       {id:7,section:"Rapid Shutdown",nec:"NEC 690.12",dynamic:true,text_2017:"Does rapid shutdown system reduce conductor voltage to 30V or less outside array boundary and 80V or less inside within 30 seconds? (2017 NEC)",text_2020:"Is module-level power electronics (MLPE) such as microinverters or DC optimizers installed on all roof-mounted array conductors? (2020/2023 NEC)",text_unsure:"⚠ Verify rapid shutdown requirements with your AHJ — 2017 NEC requires 30V/80V in 30 seconds, 2020/2023 NEC requires MLPE on all roof arrays.",tip:"The rapid shutdown rule changed completely between 2017 and 2020 NEC. Check which edition your AHJ adopted."},
       {id:8,section:"Rapid Shutdown",nec:"NEC 690.56(C)",text:"Is initiation device labeled PHOTOVOLTAIC SYSTEM EQUIPPED WITH RAPID SHUTDOWN in 3/8-inch minimum white letters on a red background?",tip:"A specific red label with white text must be on shutoff switch so firefighters can identify it immediately."},
@@ -1192,7 +1192,7 @@ Respond ONLY with this JSON no extra text:
       2: "FAIL: One pathway must be on the street or driveway side of the roof. (CFC 1205.2.1.1)",
       3: "FAIL: Arrays covering 33% or less of roof require minimum 18-inch setback on both sides of horizontal ridge. (NEC 690 / CFC 1205.2.1.2)",
       4: "FAIL: Arrays covering more than 33% of roof require minimum 36-inch setback on both sides of horizontal ridge. (NEC 690 / CFC 1205.2.1.2)",
-      5: "FAIL: Keep modules clear below emergency escape openings and provide 36-inch pathway to opening. (IFC 1030)",
+      5: "FAIL: Keep modules clear below emergency escape openings and provide 36-inch pathway to opening. (CFC 1205.2.1.2)",
       6: "FAIL: Install rapid shutdown initiation device in a readily accessible location. (NEC 690.12)",
       7: "FAIL: Rapid shutdown system must reduce conductor voltage to 30V or less outside array boundary within 30 seconds. Verify your NEC edition with local AHJ. (NEC 690.12)",
       8: "FAIL: Label must read PHOTOVOLTAIC SYSTEM EQUIPPED WITH RAPID SHUTDOWN using 3/8-inch minimum white letters on red background. (NEC 690.12)",
@@ -1462,7 +1462,6 @@ Respond ONLY with this JSON no extra text:
         const systemSize = jobData?.system_size_kw || '';
         const utility = jobData?.utility_provider || '';
         const necEdition = jobData?.nec_edition || '2020 NEC';
-        const today = new Date().toLocaleDateString('en-US');
 
         // Count checked items
         const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
@@ -1482,7 +1481,15 @@ Respond ONLY with this JSON no extra text:
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text('Official Compliance Inspection Report', 14, 20);
-        doc.text('Generated: ' + today, 140, 20);
+        
+        // Safely render generated date
+        try {
+          const generatedDate = new Date().toLocaleDateString('en-US');
+          doc.text('Generated: ' + generatedDate, 140, 20);
+        } catch (e) {
+          // Fallback if date formatting fails
+          doc.text('Generated: ' + new Date().toISOString().split('T')[0], 140, 20);
+        }
 
         // ---- COMPLIANCE STAMP ----
         if (hasFailures) {
@@ -1524,7 +1531,7 @@ Respond ONLY with this JSON no extra text:
         doc.text('System Size: ' + systemSize + ' kW', 18, 60);
         doc.text('Utility: ' + utility, 100, 48);
         doc.text('NEC Edition: ' + necEdition, 100, 54);
-        doc.text('Report Date: ' + today, 100, 60);
+        doc.text('Report Date: ' + generatedDate, 100, 60);
         doc.text('Status: ' + (isComplete ? 'COMPLETE' : checkedCount + '/' + totalCount + ' done'), 100, 66);
 
         // ---- CHECKLIST SECTIONS ----
@@ -1567,6 +1574,8 @@ Respond ONLY with this JSON no extra text:
             body: rows,
             tableWidth: 182,
             margin: { left: 14, right: 14 },
+            showHead: 'first',
+            showRowNumber: false,
             columnStyles: {
               0: { cellWidth: 8,   halign: 'center', fontStyle: 'bold', fontSize: 10 },
               1: { cellWidth: 100, overflow: 'linebreak' },
@@ -1631,6 +1640,8 @@ Respond ONLY with this JSON no extra text:
               body: rows,
               tableWidth: 182,
               margin: { left: 14, right: 14 },
+              showHead: 'first',
+              showRowNumber: false,
               columnStyles: {
                 0: { cellWidth: 8,   halign: 'center', fontStyle: 'bold', fontSize: 10 },
                 1: { cellWidth: 100, overflow: 'linebreak' },
@@ -1761,6 +1772,8 @@ Respond ONLY with this JSON no extra text:
             body: findingRows,
             tableWidth: 182,
             margin: { left: 14, right: 14 },
+            showHead: 'first',
+            showRowNumber: false,
             columnStyles: {
               0: { cellWidth: 8, halign: 'center', fontStyle: 'bold', fontSize: 11 },
               1: { cellWidth: 40 },
