@@ -318,6 +318,95 @@
       border: 1px solid #e2e8f0;
     }
 
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-badge.pass {
+      background: #dcfce7;
+      color: #16a34a;
+      border: 1px solid #86efac;
+    }
+
+    .status-badge.fail {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #f87171;
+    }
+
+    .correction-message {
+      background: #fef2f2;
+      border-left: 3px solid #dc2626;
+      padding: 10px 12px;
+      margin-top: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #dc2626;
+      line-height: 1.5;
+    }
+
+    .summary-bar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 16px 20px;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin-top: 16px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-count {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .summary-item.pass .summary-count {
+      color: #16a34a;
+    }
+
+    .summary-item.fail .summary-count {
+      color: #dc2626;
+    }
+
+    .summary-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+
+    .summary-status {
+      margin-left: auto;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .summary-status.compliant {
+      background: #dcfce7;
+      color: #16a34a;
+      border: 1px solid #86efac;
+    }
+
+    .summary-status.needs-correction {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #f87171;
+    }
+
     .tooltip-btn {
       width: 16px;
       height: 16px;
@@ -607,6 +696,21 @@
         </div>
         <div class="progress-bar-fill">
           <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Summary Bar -->
+      <div class="summary-bar" id="summaryBar">
+        <div class="summary-item pass">
+          <span class="summary-count" id="passCount">0</span>
+          <span class="summary-label">PASS</span>
+        </div>
+        <div class="summary-item fail">
+          <span class="summary-count" id="failCount">0</span>
+          <span class="summary-label">FAIL</span>
+        </div>
+        <div class="summary-status" id="overallStatus">
+          NEEDS CORRECTION
         </div>
       </div>
     </div>
@@ -1082,6 +1186,30 @@ Respond ONLY with this JSON no extra text:
       {id:20,section:"Title 24 — CA Only",nec:"Title 24 §150.1(c)14",ca_only:true,text:"For California new residential construction — does system meet Title 24 mandatory solar PV sizing based on conditioned floor area and climate zone?",tip:"California law requires new homes to have solar sized correctly for home and climate zone."}
     ];
 
+    // Correction messages for each question
+    const corrections = {
+      1: "FAIL: Provide at least two 36-inch-wide pathways on separate roof planes from lowest roof edge to ridge. (CFC 1205.2.1.1)",
+      2: "FAIL: One pathway must be on the street or driveway side of the roof. (CFC 1205.2.1.1)",
+      3: "FAIL: Arrays covering 33% or less of roof require minimum 18-inch setback on both sides of horizontal ridge. (NEC 690 / CFC 1205.2.1.2)",
+      4: "FAIL: Arrays covering more than 33% of roof require minimum 36-inch setback on both sides of horizontal ridge. (NEC 690 / CFC 1205.2.1.2)",
+      5: "FAIL: Keep modules clear below emergency escape openings and provide 36-inch pathway to opening. (IFC 1030)",
+      6: "FAIL: Install rapid shutdown initiation device in a readily accessible location. (NEC 690.12)",
+      7: "FAIL: Rapid shutdown system must reduce conductor voltage to 30V or less outside array boundary within 30 seconds. Verify your NEC edition with local AHJ. (NEC 690.12)",
+      8: "FAIL: Label must read PHOTOVOLTAIC SYSTEM EQUIPPED WITH RAPID SHUTDOWN using 3/8-inch minimum white letters on red background. (NEC 690.12)",
+      9: "FAIL: Mark all DC conduits WARNING: PHOTOVOLTAIC POWER SOURCE at least every 10 feet. (NEC 690.31)",
+      10: "FAIL: Place DC markings within one foot of all turns, bends, and penetrations. (NEC 690.31)",
+      11: "FAIL: DC disconnect must show rated operating current, voltage, maximum system voltage, and short circuit current. (NEC 690.13)",
+      12: "FAIL: Install permanent plaque at electrical service and inverter location listing all power sources. (NEC 705.10)",
+      13: "FAIL: Label all junction boxes and disconnects on ungrounded systems warning that DC conductors may be energized. (NEC 690.35)",
+      14: "FAIL: Install warning sign on equipment where terminals may stay energized in open position. (NEC 690.17)",
+      15: "FAIL: Label interactive interconnection point with rated AC output current and nominal operating AC voltage. (NEC 705.12)",
+      16: "FAIL: AFCI protection required for all DC circuits on systems with modules on or in buildings. (NEC 690.11)",
+      17: "FAIL: Backfed breaker must be rated for backfeed and labeled to prevent accidental removal. (NEC 705.12)",
+      18: "FAIL: Verify utility interconnection agreement is approved before energizing system. (Local Utility Requirements)",
+      19: "FAIL: All equipment must be UL listed or approved for solar PV use. (NEC 690.4)",
+      20: "FAIL: California Title 24 mandatory measures apply. Verify compliance with local energy code. (Title 24 Part 6)"
+    };
+
     // Render checklist
     function renderChecklist() {
       if (!jobData) return;
@@ -1112,7 +1240,10 @@ Respond ONLY with this JSON no extra text:
         
         sectionQuestions.forEach(question => {
           const isChecked = checkedItems.has(question.id);
-          const itemClass = isChecked ? 'checked' : '';
+          const itemClass = isChecked ? 'checked' : 'failed';
+          const statusBadge = isChecked ? '<span class="status-badge pass">PASS</span>' : '<span class="status-badge fail">FAIL</span>';
+          const correctionMsg = isChecked ? '' : `<div class="correction-message">${corrections[question.id] || ''}</div>`;
+          const borderStyle = isChecked ? 'border-left: 4px solid #4ade80;' : 'border-left: 4px solid #f87171;';
           
           let questionText = question.text;
           if (question.dynamic && question.id === 7) {
@@ -1126,7 +1257,7 @@ Respond ONLY with this JSON no extra text:
           }
           
           html += `
-            <div class="checklist-item ${itemClass}">
+            <div class="checklist-item ${itemClass}" style="${borderStyle}">
               <input 
                 type="checkbox" 
                 class="checklist-checkbox"
@@ -1138,12 +1269,14 @@ Respond ONLY with this JSON no extra text:
                 <div class="checklist-text">${questionText}</div>
                 <div class="checklist-meta">
                   <span class="nec-badge">${question.nec}</span>
+                  ${statusBadge}
                   <div class="tooltip-btn">
                     ⓘ
                     <div class="tooltip">${question.tip}</div>
                   </div>
                   <span class="save-feedback" id="save${question.id}">✓ Saved</span>
                 </div>
+                ${correctionMsg}
               </div>
             </div>
           `;
@@ -1192,9 +1325,33 @@ Respond ONLY with this JSON no extra text:
         // Update UI
         const item = checkbox.closest('.checklist-item');
         if (isChecked) {
+          item.classList.remove('failed');
           item.classList.add('checked');
+          item.style.borderLeft = '4px solid #4ade80';
+          // Hide correction message
+          const correctionMsg = item.querySelector('.correction-message');
+          if (correctionMsg) correctionMsg.style.display = 'none';
+          // Update badge
+          const badge = item.querySelector('.status-badge');
+          if (badge) {
+            badge.classList.remove('fail');
+            badge.classList.add('pass');
+            badge.textContent = 'PASS';
+          }
         } else {
           item.classList.remove('checked');
+          item.classList.add('failed');
+          item.style.borderLeft = '4px solid #f87171';
+          // Show correction message
+          const correctionMsg = item.querySelector('.correction-message');
+          if (correctionMsg) correctionMsg.style.display = 'block';
+          // Update badge
+          const badge = item.querySelector('.status-badge');
+          if (badge) {
+            badge.classList.remove('pass');
+            badge.classList.add('fail');
+            badge.textContent = 'FAIL';
+          }
         }
 
         // Show save feedback
@@ -1219,10 +1376,26 @@ Respond ONLY with this JSON no extra text:
       ).length;
       
       const completedCount = checkedItems.size;
+      const failedCount = totalQuestions - completedCount;
       const percentage = Math.round((completedCount / totalQuestions) * 100);
 
       progressTextEl.textContent = `Compliance Progress — ${completedCount} of ${totalQuestions} steps completed`;
       progressFillEl.style.width = `${percentage}%`;
+
+      // Update summary bar
+      document.getElementById('passCount').textContent = completedCount;
+      document.getElementById('failCount').textContent = failedCount;
+      
+      const overallStatusEl = document.getElementById('overallStatus');
+      if (failedCount === 0) {
+        overallStatusEl.textContent = 'COMPLIANT';
+        overallStatusEl.classList.remove('needs-correction');
+        overallStatusEl.classList.add('compliant');
+      } else {
+        overallStatusEl.textContent = 'NEEDS CORRECTION';
+        overallStatusEl.classList.remove('compliant');
+        overallStatusEl.classList.add('needs-correction');
+      }
 
       // Show/hide completion banner
       if (completedCount === totalQuestions) {
@@ -1295,7 +1468,9 @@ Respond ONLY with this JSON no extra text:
         const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
         const checkedCount = Array.from(allCheckboxes).filter(c => c.checked).length;
         const totalCount = allCheckboxes.length;
+        const failedCount = totalCount - checkedCount;
         const isComplete = checkedCount === totalCount;
+        const hasFailures = failedCount > 0;
 
         // ---- HEADER ----
         doc.setFillColor(26, 107, 60);
@@ -1310,7 +1485,14 @@ Respond ONLY with this JSON no extra text:
         doc.text('Generated: ' + today, 140, 20);
 
         // ---- COMPLIANCE STAMP ----
-        if (isComplete) {
+        if (hasFailures) {
+          doc.setFillColor(220, 38, 38);
+          doc.roundedRect(130, 5, 66, 16, 3, 3, 'F');
+          doc.setTextColor(255,255,255);
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text('NEEDS CORRECTION', 163, 15, { align: 'center' });
+        } else if (isComplete) {
           doc.setFillColor(26, 107, 60);
           doc.roundedRect(148, 5, 48, 16, 3, 3, 'F');
           doc.setTextColor(255,255,255);
@@ -1355,8 +1537,10 @@ Respond ONLY with this JSON no extra text:
           const questionText = item.querySelector('.checklist-text')?.textContent?.replace(/&([a-z]+);/gi, (match, entity) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[entity] || match)) || '';
           const necRef = item.querySelector('.nec-badge')?.textContent?.replace(/&([a-z]+);/gi, (match, entity) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[entity] || match)) || '';
           const isChecked = item.querySelector('input[type="checkbox"]')?.checked || false;
+          const questionId = parseInt(item.querySelector('input[type="checkbox"]')?.dataset.questionId);
+          const correctionMsg = isChecked ? '' : (corrections[questionId] || '');
           if (!sections[section]) sections[section] = [];
-          sections[section].push({ questionText, necRef, isChecked });
+          sections[section].push({ questionText, necRef, isChecked, correctionMsg });
         });
 
         // If no .checklist-item elements found, use fallback
@@ -1438,7 +1622,7 @@ Respond ONLY with this JSON no extra text:
               item.isChecked ? '✓' : '✗',
               item.questionText.substring(0, 90),
               item.necRef,
-              item.isChecked ? 'Complete' : 'Pending'
+              item.isChecked ? 'PASS' : 'FAIL'
             ]);
 
             doc.autoTable({
@@ -1480,14 +1664,38 @@ Respond ONLY with this JSON no extra text:
                   data.cell.styles.fontSize = 11;
                 }
                 if (data.section === 'body' && data.column.index === 3) {
-                  data.cell.styles.textColor = data.cell.raw === 'Complete'
+                  data.cell.styles.textColor = data.cell.raw === 'PASS'
                     ? [26, 107, 60]
-                    : [180, 120, 0];
+                    : [220, 38, 38];
                   data.cell.styles.fontStyle = 'bold';
                 }
               }
             });
             yPos = doc.lastAutoTable.finalY + 8;
+
+            // Add correction messages for failed items
+            const failedItems = items.filter(item => !item.isChecked);
+            if (failedItems.length > 0) {
+              doc.setFontSize(9);
+              doc.setFont('helvetica', 'bold');
+              doc.setTextColor(220, 38, 38);
+              doc.text('CORRECTIONS NEEDED:', 14, yPos);
+              yPos += 5;
+
+              failedItems.forEach(item => {
+                if (yPos > 270) { doc.addPage(); yPos = 20; }
+                doc.setFontSize(7);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(60, 60, 60);
+                const lines = doc.splitTextToSize(item.correctionMsg, 182);
+                lines.forEach(line => {
+                  doc.text(line, 14, yPos);
+                  yPos += 3;
+                });
+                yPos += 3;
+              });
+              yPos += 5;
+            }
           }
         }
 
