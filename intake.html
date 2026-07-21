@@ -201,6 +201,47 @@
       display: block;
     }
 
+    .jurisdiction-info {
+      margin-top: 8px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .jurisdiction-info.show {
+      display: block;
+    }
+
+    .jurisdiction-info.found {
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+
+    .jurisdiction-info.not-found {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #64748b;
+    }
+
+    .jurisdiction-info .info-line {
+      margin-bottom: 4px;
+    }
+
+    .jurisdiction-info .info-line:last-child {
+      margin-bottom: 0;
+    }
+
+    .jurisdiction-info .note {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      font-size: 11px;
+      font-style: italic;
+    }
+
     @media (max-width: 768px) {
       .nav-inner {
         padding: 12px 16px;
@@ -308,6 +349,7 @@
               autocomplete="address-level2"
             >
             <div id="city-error" class="field-error"></div>
+            <div id="jurisdictionInfo" class="jurisdiction-info"></div>
           </div>
 
           <div class="form-group">
@@ -440,6 +482,87 @@
       'Colorado': 'CO',
       'Other': 'OT'
     };
+
+    // Jurisdiction data for California cities
+    const jurisdictionData = {
+      "los angeles": { nec: "2020 NEC", fire: "2022 CFC", utility: "LADWP" },
+      "san diego": { nec: "2022 NEC", fire: "2022 CFC", utility: "SDG&E" },
+      "san francisco": { nec: "2022 NEC", fire: "2022 CFC", utility: "PG&E" },
+      "sacramento": { nec: "2020 NEC", fire: "2022 CFC", utility: "SMUD" },
+      "fresno": { nec: "2020 NEC", fire: "2022 CFC", utility: "PG&E" },
+      "oakland": { nec: "2022 NEC", fire: "2022 CFC", utility: "PG&E" },
+      "anaheim": { nec: "2020 NEC", fire: "2022 CFC", utility: "SCE" },
+      "bakersfield": { nec: "2019 NEC", fire: "2019 CFC", utility: "PG&E" },
+      "riverside": { nec: "2022 NEC", fire: "2022 CFC", utility: "SCE" },
+      "stockton": { nec: "2020 NEC", fire: "2022 CFC", utility: "PG&E" },
+      "irvine": { nec: "2022 NEC", fire: "2022 CFC", utility: "SCE" },
+      "santa ana": { nec: "2020 NEC", fire: "2022 CFC", utility: "SCE" },
+      "long beach": { nec: "2020 NEC", fire: "2022 CFC", utility: "LADWP" },
+      "glendale": { nec: "2020 NEC", fire: "2022 CFC", utility: "GWP" },
+      "pasadena": { nec: "2020 NEC", fire: "2022 CFC", utility: "PWP" }
+    };
+
+    // Store matched jurisdiction data
+    let matchedJurisdiction = null;
+
+    // Debounce function
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    // City lookup function
+    function lookupCity(cityInput) {
+      const cityLower = cityInput.toLowerCase().trim();
+      const jurisdictionInfoEl = document.getElementById('jurisdictionInfo');
+      const utilityProviderEl = document.getElementById('utility_provider');
+      const necEditionEl = document.getElementById('nec_edition');
+      
+      if (!cityLower) {
+        jurisdictionInfoEl.classList.remove('show');
+        matchedJurisdiction = null;
+        return;
+      }
+
+      const data = jurisdictionData[cityLower];
+      
+      if (data) {
+        // City found - show green info box
+        matchedJurisdiction = data;
+        jurisdictionInfoEl.innerHTML = `
+          <div class="info-line">✓ NEC Edition: ${data.nec}</div>
+          <div class="info-line">✓ Fire Code: ${data.fire}</div>
+          <div class="info-line">✓ Utility Provider: ${data.utility}</div>
+          <div class="note">Auto-populated based on your city. Verify with your local AHJ before submission.</div>
+        `;
+        jurisdictionInfoEl.classList.remove('not-found');
+        jurisdictionInfoEl.classList.add('found', 'show');
+        
+        // Auto-fill utility provider
+        utilityProviderEl.value = data.utility;
+        
+        // Auto-fill NEC edition
+        necEditionEl.value = data.nec;
+      } else {
+        // City not found - show grey info box
+        matchedJurisdiction = null;
+        jurisdictionInfoEl.innerHTML = `
+          City not found in database. Please enter utility provider manually and verify local codes with your AHJ.
+        `;
+        jurisdictionInfoEl.classList.remove('found');
+        jurisdictionInfoEl.classList.add('not-found', 'show');
+      }
+    }
+
+    // Debounced city lookup
+    const debouncedCityLookup = debounce(lookupCity, 500);
 
     // Update navbar with user info
     function updateNavbar() {
@@ -635,6 +758,7 @@
           system_size_kw:  parseFloat(document.getElementById('system_size_kw').value),
           utility_provider:document.getElementById('utility_provider').value.trim(),
           nec_edition:     document.getElementById('nec_edition').value,
+          fire_code:       matchedJurisdiction ? matchedJurisdiction.fire : null,
           user_id:         currentUser.id,
           status:          'pending'
         };
@@ -667,6 +791,14 @@
     // Event listeners
     signOutBtn.addEventListener('click', signOut);
     form.addEventListener('submit', handleSubmit);
+
+    // City field input listener with debounce
+    const cityInput = document.getElementById('city');
+    if (cityInput) {
+      cityInput.addEventListener('input', (e) => {
+        debouncedCityLookup(e.target.value);
+      });
+    }
 
     // Clear field errors on input
     const fieldIds = [
