@@ -1442,6 +1442,8 @@ Respond ONLY with this JSON no extra text:
       btn.disabled = true;
 
       try {
+        const generatedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
         // Safety check — make sure jsPDF loaded
         if (typeof window.jspdf === 'undefined') {
           alert('PDF library not loaded. Please refresh the page and try again.');
