@@ -1561,34 +1561,39 @@ Respond ONLY with this JSON no extra text:
           const rows = [];
           document.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
             const label = cb.parentElement?.textContent?.trim()?.replace(/&([a-z]+);/gi, (match, entity) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[entity] || match)) || 'Item ' + (i+1);
+            const section = cb.closest('.checklist-item')?.dataset?.section || 'General';
             rows.push([
               cb.checked ? '✓' : '✗',
-              label.substring(0, 80),
+              label.substring(0, 90),
+              'NEC 690',
+              section,
               cb.checked ? 'Complete' : 'Pending'
             ]);
           });
 
           doc.autoTable({
             startY: yPos,
-            head: [['', 'Compliance Requirement', 'Code Reference', 'Status']],
+            head: [['', 'Compliance Requirement', 'Code Reference', 'Category', 'Status']],
             body: rows,
-            tableWidth: 182,
+            tableWidth: 140,
             margin: { left: 14, right: 14 },
             showHead: 'first',
             showRowNumber: false,
             columnStyles: {
-              0: { cellWidth: 8,   halign: 'center', fontStyle: 'bold', fontSize: 10 },
-              1: { cellWidth: 100, overflow: 'linebreak' },
-              2: { cellWidth: 42,  overflow: 'linebreak' },
-              3: { cellWidth: 30,  halign: 'center' }
+              0: { cellWidth: 8 },
+              1: { cellWidth: 65 },
+              2: { cellWidth: 25 },
+              3: { cellWidth: 20 },
+              4: { cellWidth: 22 }
             },
             styles: {
               fontSize: 7.5,
-              cellPadding: 2.5,
+              cellPadding: 2,
               overflow: 'linebreak',
-              valign: 'middle',
-              lineColor: [220, 220, 220],
-              lineWidth: 0.1
+              valign: 'top'
+            },
+            bodyStyles: {
+              minCellHeight: 8
             },
             headStyles: {
               fillColor: [26, 107, 60],
@@ -1608,7 +1613,7 @@ Respond ONLY with this JSON no extra text:
                 data.cell.styles.fontStyle = 'bold';
                 data.cell.styles.fontSize = 11;
               }
-              if (data.section === 'body' && data.column.index === 3) {
+              if (data.section === 'body' && data.column.index === 4) {
                 data.cell.styles.textColor = data.cell.raw === 'Complete'
                   ? [26, 107, 60]
                   : [180, 120, 0];
@@ -1631,30 +1636,33 @@ Respond ONLY with this JSON no extra text:
               item.isChecked ? '✓' : '✗',
               item.questionText.substring(0, 90),
               item.necRef,
+              sectionName,
               item.isChecked ? 'PASS' : 'FAIL'
             ]);
 
             doc.autoTable({
               startY: yPos,
-              head: [['', 'Compliance Requirement', 'Code Reference', 'Status']],
+              head: [['', 'Compliance Requirement', 'Code Reference', 'Category', 'Status']],
               body: rows,
-              tableWidth: 182,
+              tableWidth: 140,
               margin: { left: 14, right: 14 },
               showHead: 'first',
               showRowNumber: false,
               columnStyles: {
-                0: { cellWidth: 8,   halign: 'center', fontStyle: 'bold', fontSize: 10 },
-                1: { cellWidth: 100, overflow: 'linebreak' },
-                2: { cellWidth: 42,  overflow: 'linebreak' },
-                3: { cellWidth: 30,  halign: 'center' }
+                0: { cellWidth: 8 },
+                1: { cellWidth: 65 },
+                2: { cellWidth: 25 },
+                3: { cellWidth: 20 },
+                4: { cellWidth: 22 }
               },
               styles: {
                 fontSize: 7.5,
-                cellPadding: 2.5,
+                cellPadding: 2,
                 overflow: 'linebreak',
-                valign: 'middle',
-                lineColor: [220, 220, 220],
-                lineWidth: 0.1
+                valign: 'top'
+              },
+              bodyStyles: {
+                minCellHeight: 8
               },
               headStyles: {
                 fillColor: [26, 107, 60],
@@ -1674,7 +1682,7 @@ Respond ONLY with this JSON no extra text:
                   data.cell.styles.fontStyle = 'bold';
                   data.cell.styles.fontSize = 11;
                 }
-                if (data.section === 'body' && data.column.index === 3) {
+                if (data.section === 'body' && data.column.index === 4) {
                   data.cell.styles.textColor = data.cell.raw === 'PASS'
                     ? [26, 107, 60]
                     : [220, 38, 38];
