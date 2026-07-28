@@ -1483,15 +1483,9 @@ Respond ONLY with this JSON no extra text:
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text('Official Compliance Inspection Report', 14, 20);
-        
-        // Safely render generated date
-        try {
-          const generatedDate = new Date().toLocaleDateString('en-US');
-          doc.text('Generated: ' + generatedDate, 140, 20);
-        } catch (e) {
-          // Fallback if date formatting fails
-          doc.text('Generated: ' + new Date().toISOString().split('T')[0], 140, 20);
-        }
+        doc.setFontSize(8);
+        doc.setTextColor(255, 255, 255);
+        doc.text('Generated: ' + generatedDate, 140, 20);
 
         // ---- COMPLIANCE STAMP ----
         if (hasFailures) {
@@ -1536,201 +1530,113 @@ Respond ONLY with this JSON no extra text:
         doc.text('Report Date: ' + generatedDate, 100, 60);
         doc.text('Status: ' + (isComplete ? 'COMPLETE' : checkedCount + '/' + totalCount + ' done'), 100, 66);
 
-        // ---- CHECKLIST SECTIONS ----
-        let yPos = 76;
-        const sections = {};
+        const jobDetailsEndY = 76;
 
-        // Build sections from visible checkboxes on the page
-        document.querySelectorAll('.checklist-item').forEach(item => {
-          const section = item.dataset.section || 'General';
-          const questionText = item.querySelector('.checklist-text')?.textContent?.replace(/&([a-z]+);/gi, (match, entity) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[entity] || match)) || '';
-          const necRef = item.querySelector('.nec-badge')?.textContent?.replace(/&([a-z]+);/gi, (match, entity) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[entity] || match)) || '';
-          const isChecked = item.querySelector('input[type="checkbox"]')?.checked || false;
-          const questionId = parseInt(item.querySelector('input[type="checkbox"]')?.dataset.questionId);
-          const correctionMsg = isChecked ? '' : (corrections[questionId] || '');
-          if (!sections[section]) sections[section] = [];
-          sections[section].push({ questionText, necRef, isChecked, correctionMsg });
+        // ---- PDF QUESTIONS ARRAY ----
+        const pdfQuestions = [
+          { id:1,  req: "Does installation provide at least two minimum 36-inch-wide pathways on separate roof planes from lowest roof edge to ridge?", code: "CFC 1205.2.1.1" },
+          { id:2,  req: "Is at least one 36-inch access pathway on the street or driveway side of the roof?", code: "CFC 1205.2.1.1" },
+          { id:3,  req: "For arrays covering 33% or less of roof area, is there an 18-inch clear setback on both sides of the horizontal ridge?", code: "CFC 1205.2.1.2" },
+          { id:4,  req: "For arrays covering more than 33% of roof area, is there a 36-inch clear setback on both sides of the horizontal ridge?", code: "CFC 1205.2.1.2" },
+          { id:5,  req: "Are modules kept clear of roof area directly below emergency escape and rescue openings, with a 36-inch pathway to the opening?", code: "CFC 1205.2.1.3" },
+          { id:6,  req: "Is the rapid shutdown initiation device installed in a readily accessible location?", code: "NEC 690.12(B)(1)" },
+          { id:7,  req: "Does the rapid shutdown system reduce conductor voltage to 30V or less outside array boundary within 30 seconds of initiation?", code: "NEC 690.12(B)(2)" },
+          { id:8,  req: "Is the rapid shutdown label installed with white letters on red background, minimum 3/8-inch height?", code: "NEC 690.12(C)" },
+          { id:9,  req: "Are all DC conduits marked WARNING: PHOTOVOLTAIC POWER SOURCE at least every 10 feet?", code: "NEC 690.31(G)" },
+          { id:10, req: "Are DC markings placed within one foot of all turns, bends, and penetrations through roof and wall assemblies?", code: "NEC 690.31(G)" },
+          { id:11, req: "Does the DC disconnect show rated operating current, voltage, maximum system voltage, and short circuit current?", code: "NEC 690.13(B)" },
+          { id:12, req: "Is a permanent plaque installed at electrical service and inverter location listing all electric power sources?", code: "NEC 705.10" },
+          { id:13, req: "Are all junction boxes and disconnects on ungrounded systems labeled warning that DC conductors may be energized?", code: "NEC 690.35(F)" },
+          { id:14, req: "Is a warning sign installed on equipment where terminals may stay energized in the open position?", code: "NEC 690.17(E)" },
+          { id:15, req: "Is the interactive interconnection point labeled with rated AC output current and nominal operating AC voltage?", code: "NEC 705.12" },
+          { id:16, req: "Is AFCI protection provided for all DC circuits on systems with modules on or in buildings?", code: "NEC 690.11" },
+          { id:17, req: "Is the backfed breaker rated for backfeed and labeled to prevent accidental removal?", code: "NEC 705.12(B)" },
+          { id:18, req: "Is the utility interconnection agreement approved before energizing the system?", code: "Local Utility" },
+          { id:19, req: "Is all equipment UL listed or approved for solar PV use?", code: "NEC 690.4(B)" },
+          { id:20, req: "For California new residential construction, does the system meet Title 24 mandatory solar PV measures?", code: "Title 24 §150.1(c)14" }
+        ];
+
+        // ---- BUILD TABLE BODY ----
+        const tableBody = pdfQuestions.map((q, index) => {
+          const checkbox = document.querySelector(`input[data-question-id="${q.id}"]`);
+          const isChecked = checkbox ? checkbox.checked : false;
+          return [
+            { content: q.id, styles: { halign: 'center' } },
+            { content: q.req },
+            { content: q.code, styles: { halign: 'center', fontSize: 7 } },
+            { 
+              content: isChecked ? 'PASS' : 'FAIL',
+              styles: { 
+                halign: 'center',
+                fontStyle: 'bold',
+                textColor: isChecked ? [26,107,60] : [220,38,38]
+              }
+            }
+          ];
         });
 
-        // If no .checklist-item elements found, use fallback
-        if (Object.keys(sections).length === 0) {
-          doc.setFontSize(11);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(26, 107, 60);
-          doc.text('Compliance Checklist', 14, yPos);
-          yPos += 8;
-
-          const rows = [];
-          document.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
-            const label = cb.parentElement?.textContent?.trim()?.replace(/&([a-z]+);/gi, (match, entity) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[entity] || match)) || 'Item ' + (i+1);
-            const section = cb.closest('.checklist-item')?.dataset?.section || 'General';
-            rows.push([
-              cb.checked ? '✓' : '✗',
-              label.substring(0, 90),
-              'NEC 690',
-              section,
-              cb.checked ? 'Complete' : 'Pending'
-            ]);
-          });
-
-          doc.autoTable({
-            startY: yPos,
-            head: [['', 'Compliance Requirement', 'Code Reference', 'Category', 'Status']],
-            body: rows,
-            tableWidth: 140,
-            margin: { left: 14, right: 14 },
-            showHead: 'first',
-            showRowNumber: false,
-            columnStyles: {
-              0: { cellWidth: 8 },
-              1: { cellWidth: 65 },
-              2: { cellWidth: 25 },
-              3: { cellWidth: 20 },
-              4: { cellWidth: 22 }
-            },
-            styles: {
-              fontSize: 7.5,
-              cellPadding: 2,
-              overflow: 'linebreak',
-              valign: 'top'
-            },
-            bodyStyles: {
-              minCellHeight: 8
-            },
-            headStyles: {
-              fillColor: [26, 107, 60],
-              textColor: [255, 255, 255],
-              fontSize: 8,
-              fontStyle: 'bold',
-              cellPadding: 3
-            },
-            alternateRowStyles: {
-              fillColor: [245, 252, 248]
-            },
-            didParseCell: function(data) {
-              if (data.section === 'body' && data.column.index === 0) {
-                data.cell.styles.textColor = data.cell.raw === '✓'
-                  ? [26, 107, 60]
-                  : [220, 38, 38];
+        // ---- COMPLIANCE CHECKLIST TABLE ----
+        doc.autoTable({
+          startY: jobDetailsEndY + 8,
+          head: [[
+            { content: '#', styles: { halign: 'center' } },
+            { content: 'Compliance Requirement', styles: { halign: 'left' } },
+            { content: 'Code Reference', styles: { halign: 'center' } },
+            { content: 'Status', styles: { halign: 'center' } }
+          ]],
+          body: tableBody,
+          theme: 'grid',
+          styles: {
+            fontSize: 7.5,
+            cellPadding: 3,
+            overflow: 'linebreak',
+            valign: 'top',
+            lineColor: [200, 200, 200],
+            lineWidth: 0.3
+          },
+          headStyles: {
+            fillColor: [26, 107, 60],
+            textColor: [255, 255, 255],
+            fontSize: 8,
+            fontStyle: 'bold'
+          },
+          columnStyles: {
+            0: { cellWidth: 8,  halign: 'center' },
+            1: { cellWidth: 112, halign: 'left', overflow: 'linebreak' },
+            2: { cellWidth: 35, halign: 'center' },
+            3: { cellWidth: 20, halign: 'center' }
+          },
+          alternateRowStyles: {
+            fillColor: [245, 250, 246]
+          },
+          didParseCell: function(data) {
+            if (data.column.index === 3) {
+              const text = data.cell.raw?.content || data.cell.text?.[0] || '';
+              if (text === 'PASS') {
+                data.cell.styles.textColor = [26, 107, 60];
                 data.cell.styles.fontStyle = 'bold';
-                data.cell.styles.fontSize = 11;
-              }
-              if (data.section === 'body' && data.column.index === 4) {
-                data.cell.styles.textColor = data.cell.raw === 'Complete'
-                  ? [26, 107, 60]
-                  : [180, 120, 0];
+              } else if (text === 'FAIL') {
+                data.cell.styles.textColor = [220, 38, 38];
                 data.cell.styles.fontStyle = 'bold';
               }
             }
-          });
-        } else {
-          // Render each section
-          for (const [sectionName, items] of Object.entries(sections)) {
-            if (yPos > 260) { doc.addPage(); yPos = 20; }
-
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(26, 107, 60);
-            doc.text(sectionName.toUpperCase(), 14, yPos);
-            yPos += 4;
-
-            const rows = items.map(item => [
-              item.isChecked ? '✓' : '✗',
-              item.questionText.substring(0, 90),
-              item.necRef,
-              sectionName,
-              item.isChecked ? 'PASS' : 'FAIL'
-            ]);
-
-            doc.autoTable({
-              startY: yPos,
-              head: [['', 'Compliance Requirement', 'Code Reference', 'Category', 'Status']],
-              body: rows,
-              tableWidth: 140,
-              margin: { left: 14, right: 14 },
-              showHead: 'first',
-              showRowNumber: false,
-              columnStyles: {
-                0: { cellWidth: 8 },
-                1: { cellWidth: 65 },
-                2: { cellWidth: 25 },
-                3: { cellWidth: 20 },
-                4: { cellWidth: 22 }
-              },
-              styles: {
-                fontSize: 7.5,
-                cellPadding: 2,
-                overflow: 'linebreak',
-                valign: 'top'
-              },
-              bodyStyles: {
-                minCellHeight: 8
-              },
-              headStyles: {
-                fillColor: [26, 107, 60],
-                textColor: [255, 255, 255],
-                fontSize: 8,
-                fontStyle: 'bold',
-                cellPadding: 3
-              },
-              alternateRowStyles: {
-                fillColor: [245, 252, 248]
-              },
-              didParseCell: function(data) {
-                if (data.section === 'body' && data.column.index === 0) {
-                  data.cell.styles.textColor = data.cell.raw === '✓'
-                    ? [26, 107, 60]
-                    : [220, 38, 38];
-                  data.cell.styles.fontStyle = 'bold';
-                  data.cell.styles.fontSize = 11;
-                }
-                if (data.section === 'body' && data.column.index === 4) {
-                  data.cell.styles.textColor = data.cell.raw === 'PASS'
-                    ? [26, 107, 60]
-                    : [220, 38, 38];
-                  data.cell.styles.fontStyle = 'bold';
-                }
-              }
-            });
-            yPos = doc.lastAutoTable.finalY + 8;
-
-            // Add correction messages for failed items
-            const failedItems = items.filter(item => !item.isChecked);
-            if (failedItems.length > 0) {
-              doc.setFontSize(9);
-              doc.setFont('helvetica', 'bold');
-              doc.setTextColor(220, 38, 38);
-              doc.text('CORRECTIONS NEEDED:', 14, yPos);
-              yPos += 5;
-
-              failedItems.forEach(item => {
-                if (yPos > 270) { doc.addPage(); yPos = 20; }
-                doc.setFontSize(7);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(60, 60, 60);
-                const lines = doc.splitTextToSize(item.correctionMsg, 182);
-                lines.forEach(line => {
-                  doc.text(line, 14, yPos);
-                  yPos += 3;
-                });
-                yPos += 3;
-              });
-              yPos += 5;
-            }
-          }
-        }
+          },
+          margin: { top: 10, left: 14, right: 14, bottom: 10 },
+          pageBreak: 'auto',
+          rowPageBreak: 'avoid',
+          showHead: 'everyPage'
+        });
 
         // ---- AI INSPECTION RESULTS IN PDF ----
         const aiResult = window.aiInspectionResult;
 
         if (aiResult && aiResult.findings && aiResult.findings.length > 0) {
+          let yPos = doc.lastAutoTable.finalY + 10;
 
           // Add new page if not enough space
-          if (doc.lastAutoTable.finalY > 220) {
+          if (yPos > 220) {
             doc.addPage();
             yPos = 20;
-          } else {
-            yPos = doc.lastAutoTable.finalY + 10;
           }
 
           // Section header
@@ -1817,6 +1723,7 @@ Respond ONLY with this JSON no extra text:
         // ---- NOTES ----
         const notes = jobData?.notes;
         if (notes && notes.trim()) {
+          let yPos = doc.lastAutoTable.finalY + 10;
           if (yPos > 250) { doc.addPage(); yPos = 20; }
           doc.setFontSize(10);
           doc.setFont('helvetica', 'bold');
